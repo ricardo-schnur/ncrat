@@ -342,7 +342,7 @@ proc ncratPow(ncrat f, int n) {
 
 // Print rational function to string
 proc ncratSPrint(ncrat f) {
-  string t;
+  string t, h, k;
   string s = f.kind;
   list l = f.expr;
 
@@ -355,15 +355,30 @@ proc ncratSPrint(ncrat f) {
   }
 
   if (s == "Add") {
-    t = "(" + ncratSPrint(l[1]) + "+" + ncratSPrint(l[2]) + ")";
+    t = ncratSPrint(l[1]) + "+" + ncratSPrint(l[2]);
   }
 
   if (s == "Sub") {
-    t = "(" + ncratSPrint(l[1]) + "-" + "(" + ncratSPrint(l[2]) + ")" + ")";
+    if (l[2].kind == "Add" or l[2].kind == "Sub") {
+      h = "(" + ncratSPrint(l[2]) + ")";
+    } else {
+      h = ncratSPrint(l[2]);
+    }
+    t = ncratSPrint(l[1]) + "-" + h;
   }
 
   if (s == "Mult") {
-    t = ncratSPrint(l[1]) + "*" + ncratSPrint(l[2]);
+    if (l[1].kind == "Add" or l[1].kind == "Sub") {
+      h = "(" + ncratSPrint(l[1]) + ")";
+    } else {
+      h = ncratSPrint(l[1]);
+    }
+    if (l[2].kind == "Add" or l[2].kind == "Sub") {
+      k = "(" + ncratSPrint(l[2]) + ")";
+    } else {
+      k = ncratSPrint(l[2]);
+    }
+    t = h + "*" + k;
   }
 
   if (s == "Inv") {

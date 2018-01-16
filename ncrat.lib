@@ -1,26 +1,18 @@
-////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 version = "version ncrat.lib 0.0.0.1 Dec_2017 ";
 category = "Noncommutative";
 info="
-LIBRARY:  ncrat.lib  Tools for working with nc rational functions
+LIBRARY:  ncrat.lib Tools for working with nc rational functions
 AUTHOR:   Ricardo Schnur, email: ricardo.schnur@math.uni-sb.de
 
 KEYWORDS: noncommutative rational functions, representations
 
 PROCEDURES:
-ncInit()    initializes datatypes
-proc ncratDef(string, list)
-proc ncratAdd(ncrat, ncrat)
-proc ncratMult(ncrat, ncrat)
-proc ncratInv(ncrat)
-proc ncratTp(ncrat)
-proc ncratSPrint(ncrat)
-proc ncGetVariables()
 ";
 
 LIB "linalg.lib";
 LIB "random.lib";
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////
 
 /*---------------------------------------------------------/
 
@@ -28,13 +20,7 @@ LIB "random.lib";
 
 /---------------------------------------------------------*/
 
-proc ncInit(list vars) "
-    USAGE : ncInit() RETURNS : Makes datatype 'ncrat' available
-                                   .NOTE
-                               : Has to be called once in order to work with
-                                 'ncrat' objects.EXAMPLE : example ncInit;
-shows an example "
-{
+proc ncInit(list vars) {
   // Check if already initialized
   if (defined(NCRATINITIALIZE)) {
     return ();
@@ -130,12 +116,6 @@ shows an example "
   export(TOKENSTREAM);
 
   ncRingDefine();
-}
-example {
-  "EXAMPLE:";
-  ncInit();
-  ncrat f;
-  typeof(f);
 }
 
 /*---------------------------------------------------------/
@@ -400,7 +380,7 @@ proc ncratSPrint(ncrat f) {
 }
 
 // Print rational function to console
-static proc ncratPrint(ncrat f) { print(ncratSPrint(f)); }
+proc ncratPrint(ncrat f) { print(ncratSPrint(f)); }
 
 /*---------------------------------------------------------/
 
@@ -950,7 +930,7 @@ proc ncratFromPoly(poly p) {
 
 /---------------------------------------------------------*/
 
-// Print rational function to console
+// Print linearization to console
 proc ncrepPrint(ncrep q) {
   print("lvec=");
   print(q.lvec);
@@ -967,7 +947,7 @@ proc ncrepPrint(ncrep q) {
 /---------------------------------------------------------*/
 
 // Handle constants
-proc ncrepConst(number n) {
+static proc ncrepConst(number n) {
   ncrep q;
   matrix left[1][2] = 0, 1;
   matrix right[2][1] = 0, 1;
@@ -979,7 +959,7 @@ proc ncrepConst(number n) {
 }
 
 // Handle variables
-proc ncrepVar(poly p) {
+static proc ncrepVar(poly p) {
   ncrep q;
   matrix left[1][2] = 0, 1;
   matrix right[2][1] = 0, 1;
@@ -991,7 +971,7 @@ proc ncrepVar(poly p) {
 }
 
 // Handle sums
-proc ncrepAdd(ncrep s, ncrep t) {
+static proc ncrepAdd(ncrep s, ncrep t) {
   ncrep q;
   q.lvec = concat(s.lvec, t.lvec);
   q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
@@ -1000,7 +980,7 @@ proc ncrepAdd(ncrep s, ncrep t) {
 }
 
 // Handle differences
-proc ncrepSub(ncrep s, ncrep t) {
+static proc ncrepSub(ncrep s, ncrep t) {
   ncrep q;
   q.lvec = concat(s.lvec, t.lvec);
   q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
@@ -1009,7 +989,7 @@ proc ncrepSub(ncrep s, ncrep t) {
 }
 
 // Handle products
-proc ncrepMult(ncrep s, ncrep t) {
+static proc ncrepMult(ncrep s, ncrep t) {
   ncrep q;
   int dims = ncols(s.lvec);
   int dimt = ncols(t.lvec);
@@ -1028,7 +1008,7 @@ proc ncrepMult(ncrep s, ncrep t) {
 }
 
 // Handle inverses
-proc ncrepInv(ncrep s) {
+static proc ncrepInv(ncrep s) {
   ncrep q;
   int n = ncols(s.lvec);
   matrix one[1][1] = 1;
@@ -1052,6 +1032,10 @@ proc ncrepInv(ncrep s) {
   a rational function r, then obviously q* = (v*, Q*, u*)
   yields a representation of r*.
 */
+
+/*   THIS CODE DOES NOT WHAT IT IS SUPPOSED TO DO */
+
+/*
 proc ncrepTp(ncrep s) {
   ncrep q;
   q.lvec = transpose(s.rvec);
@@ -1059,6 +1043,7 @@ proc ncrepTp(ncrep s) {
   q.mat = transpose(s.mat);
   return (q);
 }
+/*
 
 /*---------------------------------------------------------/
 
@@ -1138,7 +1123,7 @@ proc ncrepGet(ncrat f) {
 /---------------------------------------------------------*/
 
 // Tensor A with unit matrix of size N
-proc ncTensorMat(matrix A, int N) {
+static proc ncTensorMat(matrix A, int N) {
   matrix E[N][N];
   E = E + 1;
   matrix M = tensor(A, E);
@@ -1146,7 +1131,7 @@ proc ncTensorMat(matrix A, int N) {
 }
 
 // Substitute all occurences of VARIABLE*E in M with A
-proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
+static proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
   int N = ncols(A);
   int N2 = ncols(M);
   int N3 = N2 div N;
@@ -1215,7 +1200,7 @@ proc ncrepSubstitute(ncrep q, list #) {
   return (q2);
 }
 
-// Replace and evaluate
+// Given representation (u, Q, v) calculate -u*Q^(-1)*v
 proc ncrepEvaluate(ncrep q) {
   matrix M = -q.lvec * inverse(q.mat) * q.rvec;
   return (M);

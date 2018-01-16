@@ -67,28 +67,6 @@ static proc ncratIsValid(string s, list l) {
 
 /*---------------------------------------------------------/
 
-  Integer powers of rational functions
-
-/---------------------------------------------------------*/
-
-proc ncratPow(ncrat f, int n) {
-  if (n < 0) {
-    return (ncratInv(ncratPow(f, -n)));
-  }
-
-  if (n == 0) {
-    return (ncratGet("1"));
-  }
-
-  if (n == 1) {
-    return (f);
-  }
-
-  return (ncratPow(f, n - 1) * f);
-}
-
-/*---------------------------------------------------------/
-
   Some tools to work on strings
 
 /---------------------------------------------------------*/
@@ -211,7 +189,7 @@ static proc stringToNumber(string s) {
 
 // First argument is Kind
 // Optional arguments: Value, Name
-static proc Token(string s, list #) {
+static proc makeToken(string s, list #) {
   token t;
   int i, n;
 
@@ -236,10 +214,10 @@ static proc Token(string s, list #) {
 // Constructor for token_stream
 static proc makeTokenStream() {
   tokenstream ts;
-  ts.full = 0;                // buffer starts empty
-  ts.position = 0;            // initial position
-  ts.buffer = Token("empty"); // empty buffer
-  ts.input = "";              // no input yet
+  ts.full = 0;                    // buffer starts empty
+  ts.position = 0;                // initial position
+  ts.buffer = makeToken("empty"); // empty buffer
+  ts.input = "";                  // no input yet
   return (ts);
 }
 
@@ -269,7 +247,7 @@ static proc tsGet() {
   // Return empty token if there are no others
   if (TOKENSTREAM.position == 0 or
       TOKENSTREAM.position > size(TOKENSTREAM.input)) {
-    return (Token("empty"));
+    return (makeToken("empty"));
   }
 
   // Get token from TOKENSTREAM.input
@@ -289,7 +267,7 @@ static proc tsGet() {
   // characters that represent themselves
   if (isSelfRepresented(s[i])) {
     TOKENSTREAM.position = i + 1;
-    return (Token(s[i]));
+    return (makeToken(s[i]));
   }
 
   // numbers
@@ -309,7 +287,7 @@ static proc tsGet() {
     TOKENSTREAM.position = i + 1;
 
     number n = stringToNumber(str);
-    return (Token("number", n));
+    return (makeToken("number", n));
   }
 
   // constants,variables and keywords
@@ -331,10 +309,10 @@ static proc tsGet() {
 
     // keyword
     if (name == "inv") {
-      return (Token("inv"));
+      return (makeToken("inv"));
     }
     if (name == "tp") {
-      return (Token("tp"));
+      return (makeToken("tp"));
     }
 
     // constant or variable
@@ -352,13 +330,13 @@ static proc tsGet() {
       if (isConst) {
         cmd = "number value = number(" + name + ");";
         execute(cmd);
-        return (Token("number", value));
+        return (makeToken("number", value));
       }
 
       // variable
       for (i = 1; i <= size(NCVARIABLES); i++) {
         if (name == NCVARIABLES[i]) {
-          return (Token("name", name));
+          return (makeToken("name", name));
         }
       }
 
@@ -428,7 +406,7 @@ static proc primary() {
       ERROR(")' expected!");
     }
 
-    return (ncratInv(f));
+    return (ncratInvert(f));
   }
   // involution
   if (t.kind == "tp") {
@@ -444,7 +422,7 @@ static proc primary() {
       ERROR(")' expected!");
     }
 
-    return (ncratTp(f));
+    return (ncratTranspose(f));
   }
 
   ERROR("Primary expected!");
@@ -469,7 +447,7 @@ static proc secondary() {
 
       kill(right);
       kill(t);
-      return (ncratPow(left, n));
+      return (ncratPower(left, n));
     }
 
     if (t.kind == "/") {
@@ -479,7 +457,7 @@ static proc secondary() {
         ERROR("Expected number after '/'.");
       }
 
-      left = left * ncratInv(right);
+      left = left * ncratInvert(right);
 
       kill(right);
       kill(t);
@@ -564,81 +542,6 @@ static proc ncrepVar(poly p) {
   q.mat = Q;
   return (q);
 }
-
-// Handle sums
-static proc ncrepAdd(ncrep s, ncrep t) {
-  ncrep q;
-  q.lvec = concat(s.lvec, t.lvec);
-  q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
-  q.mat = dsum(s.mat, t.mat);
-  return (q);
-}
-
-// Handle differences
-static proc ncrepSub(ncrep s, ncrep t) {
-  ncrep q;
-  q.lvec = concat(s.lvec, t.lvec);
-  q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
-  q.mat = dsum(s.mat, -t.mat);
-  return (q);
-}
-
-// Handle products
-static proc ncrepMult(ncrep s, ncrep t) {
-  ncrep q;
-  int dims = ncols(s.lvec);
-  int dimt = ncols(t.lvec);
-  matrix lzero[1][dimt] = 0;
-  matrix rzero[dims][1] = 0;
-  matrix mzero[dimt][dims] = 0;
-
-  q.lvec = concat(lzero, s.lvec);
-  q.rvec = transpose(concat(transpose(rzero), transpose(t.rvec)));
-
-  matrix A = concat(s.rvec * t.lvec, s.mat);
-  matrix B = concat(t.mat, mzero);
-  q.mat = transpose(concat(transpose(A), transpose(B)));
-
-  return (q);
-}
-
-// Handle inverses
-static proc ncrepInv(ncrep s) {
-  ncrep q;
-  int n = ncols(s.lvec);
-  matrix one[1][1] = 1;
-  matrix vzero[1][n] = 0;
-  matrix mzero[1][1] = 0;
-
-  q.lvec = concat(one, vzero);
-  q.rvec = transpose(q.lvec);
-
-  matrix A = concat(mzero, s.lvec);
-  matrix B = concat(s.rvec, -s.mat);
-  q.mat = transpose(concat(transpose(A), transpose(B)));
-
-  return (q);
-}
-
-/*
-  Handle transposes
-
-  If q = (u, Q, v) is a formal linear representation of
-  a rational function r, then obviously q* = (v*, Q*, u*)
-  yields a representation of r*.
-*/
-
-// THIS CODE DOES NOT WHAT IT IS SUPPOSED TO DO
-
-/*
-static proc ncrepTp(ncrep s) {
-  ncrep q;
-  q.lvec = transpose(s.rvec);
-  q.rvec = transpose(s.lvec);
-  q.mat = transpose(s.mat);
-  return (q);
-}
-*/
 
 // Tensor A with unit matrix of size N
 static proc ncTensorMat(matrix A, int N) {
@@ -763,11 +666,11 @@ proc ncInit(list vars) {
 
   /---------------------------------------------------------*/
 
-  system("install", "ncrat", "=", ncratDef, 1);
+  system("install", "ncrat", "=", ncratDefine, 1);
   system("install", "ncrat", "+", ncratAdd, 2);
-  system("install", "ncrat", "-", ncratSub, 2);
-  system("install", "ncrat", "*", ncratMult, 2);
-  system("install", "ncrat", "^", ncratPow, 2);
+  system("install", "ncrat", "-", ncratSubstract, 2);
+  system("install", "ncrat", "*", ncratMultiply, 2);
+  system("install", "ncrat", "^", ncratPower, 2);
   system("install", "ncrat", "print", ncratPrint, 1);
   system("install","ncrep", "print", ncrepPrint, 1);
 
@@ -823,7 +726,7 @@ proc ncRingDefine() {
 
 /---------------------------------------------------------*/
 
-proc ncGetVars() { string(NCVARIABLES); }
+proc ncVarsGet() { string(NCVARIABLES); }
 
 /*---------------------------------------------------------/
 
@@ -831,7 +734,7 @@ proc ncGetVars() { string(NCVARIABLES); }
 
 /---------------------------------------------------------*/
 
-proc ncAddVars(list vars) {
+proc ncVarsAdd(list vars) {
   int i, j;
   int exists = 0;
 
@@ -857,7 +760,7 @@ proc ncAddVars(list vars) {
 
 /---------------------------------------------------------*/
 
-proc ncratDef(string s, list l) {
+proc ncratDefine(string s, list l) {
   if (not(ncratIsValid(s, l))) {
     ERROR("Not a valid rational expression!");
   }
@@ -881,13 +784,13 @@ proc ncratAdd(ncrat f, ncrat g) {
 }
 
 // Substraction
-proc ncratSub(ncrat f, ncrat g) {
+proc ncratSubstract(ncrat f, ncrat g) {
   ncrat h = "Sub", list(f, g);
   return (h);
 }
 
 // Multiplication
-proc ncratMult(ncrat f, ncrat g) {
+proc ncratMultiply(ncrat f, ncrat g) {
   // Both factors are constants
   if (f.kind == "Const" and g.kind == "Const") {
     ncrat h = "Const", list(f.expr[1] * g.expr[1]);
@@ -897,7 +800,7 @@ proc ncratMult(ncrat f, ncrat g) {
   // Only second factor is a constant
   // Switch order of multiplication
   if (g.kind == "Const") {
-    return (ncratMult(g, f));
+    return (ncratMultiply(g, f));
   }
 
   // Otherwise
@@ -906,7 +809,7 @@ proc ncratMult(ncrat f, ncrat g) {
 }
 
 // Inversion
-proc ncratInv(ncrat f) {
+proc ncratInvert(ncrat f) {
   ncrat h;
   if (f.kind == "Const") {
     number n = 1;
@@ -919,7 +822,7 @@ proc ncratInv(ncrat f) {
 }
 
 // Involution
-proc ncratTp(ncrat f) {
+proc ncratTranspose(ncrat f) {
   ncrat h = "Tp", list(f);
   return (h);
 }
@@ -1043,7 +946,7 @@ proc ncratPrint(ncrat f) { print(ncratSPrint(f)); }
 
 /---------------------------------------------------------*/
 
-proc ncratGet(string s) {
+proc ncratFromString(string s) {
   // Clear tokenstream
   TOKENSTREAM.input = s;
   TOKENSTREAM.position = 1;
@@ -1061,7 +964,7 @@ proc ncratGet(string s) {
 
 proc ncratFromPoly(poly p) {
   string s = print(p);
-  ncrat f = ncratGet(s);
+  ncrat f = ncratFromString(s);
   return (f);
 }
 
@@ -1123,7 +1026,7 @@ proc ncrepGet(ncrat f) {
   }
 
   if (f.kind == "Sub") {
-    q = ncrepSub(ncrepGet(f.expr[1]), ncrepGet(f.expr[2]));
+    q = ncrepSubstract(ncrepGet(f.expr[1]), ncrepGet(f.expr[2]));
     return (q);
   }
 
@@ -1143,12 +1046,12 @@ proc ncrepGet(ncrat f) {
     }
 
     // No constant factors
-    q = ncrepMult(ncrepGet(f.expr[1]), ncrepGet(f.expr[2]));
+    q = ncrepMultiply(ncrepGet(f.expr[1]), ncrepGet(f.expr[2]));
     return (q);
   }
 
   if (f.kind == "Inv") {
-    q = ncrepInv(ncrepGet(f.expr[1]));
+    q = ncrepInvert(ncrepGet(f.expr[1]));
     return (q);
   }
 
@@ -1174,7 +1077,7 @@ proc ncrepGet(ncrat f) {
 
 // Replace variable xi by matrix Ai in q.mat
 // list(A1, x1, A2, x2, ...) matrix, poly
-proc ncrepSubstitute(ncrep q, list #) {
+proc ncrepSubstractstitute(ncrep q, list #) {
   int length = size(#);
 
   // List empty
@@ -1226,6 +1129,81 @@ proc ncrepEvaluate(ncrep q) {
   return (M);
 }
 
+// Handle sums
+proc ncrepAdd(ncrep s, ncrep t) {
+  ncrep q;
+  q.lvec = concat(s.lvec, t.lvec);
+  q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
+  q.mat = dsum(s.mat, t.mat);
+  return (q);
+}
+
+// Handle differences
+proc ncrepSubstract(ncrep s, ncrep t) {
+  ncrep q;
+  q.lvec = concat(s.lvec, t.lvec);
+  q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
+  q.mat = dsum(s.mat, -t.mat);
+  return (q);
+}
+
+// Handle products
+proc ncrepMultiply(ncrep s, ncrep t) {
+  ncrep q;
+  int dims = ncols(s.lvec);
+  int dimt = ncols(t.lvec);
+  matrix lzero[1][dimt] = 0;
+  matrix rzero[dims][1] = 0;
+  matrix mzero[dimt][dims] = 0;
+
+  q.lvec = concat(lzero, s.lvec);
+  q.rvec = transpose(concat(transpose(rzero), transpose(t.rvec)));
+
+  matrix A = concat(s.rvec * t.lvec, s.mat);
+  matrix B = concat(t.mat, mzero);
+  q.mat = transpose(concat(transpose(A), transpose(B)));
+
+  return (q);
+}
+
+// Handle inverses
+proc ncrepInvert(ncrep s) {
+  ncrep q;
+  int n = ncols(s.lvec);
+  matrix one[1][1] = 1;
+  matrix vzero[1][n] = 0;
+  matrix mzero[1][1] = 0;
+
+  q.lvec = concat(one, vzero);
+  q.rvec = transpose(q.lvec);
+
+  matrix A = concat(mzero, s.lvec);
+  matrix B = concat(s.rvec, -s.mat);
+  q.mat = transpose(concat(transpose(A), transpose(B)));
+
+  return (q);
+}
+
+/*
+  Handle transposes
+
+  If q = (u, Q, v) is a formal linear representation of
+  a rational function r, then obviously q* = (v*, Q*, u*)
+  yields a representation of r*.
+*/
+
+// THIS CODE DOES NOT WHAT IT IS SUPPOSED TO DO
+
+/*
+static proc ncrepTp(ncrep s) {
+  ncrep q;
+  q.lvec = transpose(s.rvec);
+  q.rvec = transpose(s.lvec);
+  q.mat = transpose(s.mat);
+  return (q);
+}
+*/
+
 /*---------------------------------------------------------/
 
   Test whether q.mat is invertible via evaluation
@@ -1236,7 +1214,7 @@ proc ncrepEvaluate(ncrep q) {
 
 /---------------------------------------------------------*/
 
-proc ncIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
+proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
   int N = size(vars);
   int i, k;
   for (i = 1; i <= n; i++) {
@@ -1247,7 +1225,7 @@ proc ncIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
       l = l + list(A(k), vars[k]);
       kill(A(k));
     }
-    ncrep q2 = ncrepSubstitute(q, l);
+    ncrep q2 = ncrepSubstractstitute(q, l);
     kill(l);
 
     // Check for invertibility
@@ -1258,6 +1236,28 @@ proc ncIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
     kill(q2);
   }
   return (0);
+}
+
+/*---------------------------------------------------------/
+
+  Integer powers of rational functions
+
+/---------------------------------------------------------*/
+
+proc ncratPower(ncrat f, int n) {
+  if (n < 0) {
+    return (ncratInvert(ncratPower(f, -n)));
+  }
+
+  if (n == 0) {
+    return (ncratFromString("1"));
+  }
+
+  if (n == 1) {
+    return (f);
+  }
+
+  return (ncratPower(f, n - 1) * f);
 }
 
 /*########################################################/*

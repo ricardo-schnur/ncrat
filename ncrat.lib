@@ -14,56 +14,23 @@ LIB "linalg.lib";
 LIB "random.lib";
 ////////////////////////////////////////////////////////////
 
-/*########################################################/*
+/*##########################################################
 
   #pragma region STATIC PROCEDURES
 
-/*########################################################/*
+##########################################################*/
 
+/*##########################################################
 
-/*---------------------------------------------------------/
+  #pragma region GENERAL
 
-  Check whether input is a valid rational expression
+##########################################################*/
 
-/---------------------------------------------------------*/
+/*##########################################################
 
-static proc ncratIsValid(string s, list l) {
+  #pragma region STRING
 
-  while (1) {
-    if (s == "Const") {
-      if (not((size(l) == 1) and (typeof(l[1]) == "number"))) {
-        return (0);
-      }
-      break;
-    }
-
-    if (s == "Var") {
-      if (not((size(l) == 1) and (typeof(l[1]) == "string"))) {
-        return (0);
-      }
-      break;
-    }
-
-    if (s == "Add" or s == "Sub" or s == "Mult") {
-      if (not((size(l) == 2) and (typeof(l[1]) == "ncrat") and
-              (typeof(l[2]) == "ncrat"))) {
-        return (0);
-      }
-      break;
-    }
-
-    if (s == "Inv" or s == "Tp") {
-      if (not((size(l) == 1) and (typeof(l[1]) == "ncrat"))) {
-        return (0);
-      }
-      break;
-    }
-
-    break;
-  }
-
-  return (1);
-}
+##########################################################*/
 
 /*---------------------------------------------------------/
 
@@ -181,9 +148,21 @@ static proc stringToNumber(string s) {
   return (n);
 }
 
+/*##########################################################
+
+  #pragma endregion STRING
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma region TOKEN
+
+##########################################################*/
+
 /*---------------------------------------------------------/
 
-  Constructors
+  Constructors for token and tokenstream
 
 /---------------------------------------------------------*/
 
@@ -350,9 +329,61 @@ static proc tsGet() {
   ERROR("Unrecognized input: " + s[i]);
 }
 
+/*##########################################################
+
+  #pragma endregion TOKEN
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma region GRAMMAR
+
+##########################################################*/
+
 /*---------------------------------------------------------/
 
-  Implement grammar
+  Input for ncrat function
+  according to the following grammar
+
+    Expression:
+        Term
+        Expression "+" Term
+        Expression "-" Term
+
+    Term:
+        Secondary
+        Term "*" Secondary
+
+    Secondary:
+        Primary
+        Primary "^" int
+        Primary "/" Primary
+
+    Primary:
+        Number
+        "(" Expression ")"
+        "+" Primary
+        "-" Primary
+        "inv(" Expression ")"
+        "tp(" Expression ")"
+        Name
+
+    Number:
+        digit
+        Number digit
+
+    Name:
+        letter
+        letter Sequence
+
+    Sequence:
+        letter
+        digit
+        "_"
+        letter Sequence
+        digit Sequence
+        "_" Sequence
 
 /---------------------------------------------------------*/
 
@@ -513,6 +544,80 @@ static proc expression() {
   }
 }
 
+/*##########################################################
+
+  #pragma endregion GRAMMAR
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma endregion GENERAL
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma region NCRAT
+
+##########################################################*/
+
+static proc ncratIsValid(string s, list l) {
+
+  while (1) {
+    if (s == "Const") {
+      if (not((size(l) == 1) and (typeof(l[1]) == "number"))) {
+        return (0);
+      }
+      break;
+    }
+
+    if (s == "Var") {
+      if (not((size(l) == 1) and (typeof(l[1]) == "string"))) {
+        return (0);
+      }
+      break;
+    }
+
+    if (s == "Add" or s == "Sub" or s == "Mult") {
+      if (not((size(l) == 2) and (typeof(l[1]) == "ncrat") and
+              (typeof(l[2]) == "ncrat"))) {
+        return (0);
+      }
+      break;
+    }
+
+    if (s == "Inv" or s == "Tp") {
+      if (not((size(l) == 1) and (typeof(l[1]) == "ncrat"))) {
+        return (0);
+      }
+      break;
+    }
+
+    break;
+  }
+
+  return (1);
+}
+
+/*##########################################################
+
+  #pragma endregion NCRAT
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma region NCREP
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma endregion NCREP
+
+##########################################################*/
+
 /*---------------------------------------------------------/
 
   Implement algorithm for formal linear representations
@@ -573,25 +678,25 @@ static proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
   return (M);
 }
 
-/*########################################################/*
+/*##########################################################
 
   #pragma endregion STATIC PROCEDURES
 
-/*########################################################/*
+##########################################################*/
 
-
-/*########################################################/*
+/*##########################################################
 
   #pragma region NON-STATIC PROCEDURES
 
-/*########################################################/*
+##########################################################*/
 
-/*---------------------------------------------------------/
+/*##########################################################
 
-    Initialize datastructures
+  #pragma region GENERAL
 
-/---------------------------------------------------------*/
+##########################################################*/
 
+// Initialize datastructures
 proc ncInit(list vars) {
   // Check if already initialized
   if (defined(NCRATINITIALIZE)) {
@@ -672,7 +777,7 @@ proc ncInit(list vars) {
   system("install", "ncrat", "*", ncratMultiply, 2);
   system("install", "ncrat", "^", ncratPower, 2);
   system("install", "ncrat", "print", ncratPrint, 1);
-  system("install","ncrep", "print", ncrepPrint, 1);
+  system("install", "ncrep", "print", ncrepPrint, 1);
 
 
   /*---------------------------------------------------------/
@@ -690,12 +795,7 @@ proc ncInit(list vars) {
   ncRingDefine();
 }
 
-/*---------------------------------------------------------/
-
-  Define ring 'NCRING' with variables from list
-
-/---------------------------------------------------------*/
-
+// Define ring 'NCRING' with variables from list
 proc ncRingDefine() {
   // Kill old ring if it already exists
   if (not(defined(NCRING) == 0)) {
@@ -720,20 +820,10 @@ proc ncRingDefine() {
   exportto(Top, NCRING);
 }
 
-/*---------------------------------------------------------/
-
-  List nc variables that are in use
-
-/---------------------------------------------------------*/
-
+// List nc variables that are in use
 proc ncVarsGet() { string(NCVARIABLES); }
 
-/*---------------------------------------------------------/
-
-  Add variables to 'NCRING'
-
-/---------------------------------------------------------*/
-
+// Add variables to 'NCRING'
 proc ncVarsAdd(list vars) {
   int i, j;
   int exists = 0;
@@ -754,12 +844,19 @@ proc ncVarsAdd(list vars) {
   ncRingDefine();
 }
 
-/*---------------------------------------------------------/
+/*##########################################################
 
-  Definition of elements of type 'ncrat'
+  #pragma endregion GENERAL
 
-/---------------------------------------------------------*/
+##########################################################*/
 
+/*##########################################################
+
+  #pragma region NCRAT
+
+##########################################################*/
+
+// Definition of elements of type 'ncrat'
 proc ncratDefine(string s, list l) {
   if (not(ncratIsValid(s, l))) {
     ERROR("Not a valid rational expression!");
@@ -770,12 +867,6 @@ proc ncratDefine(string s, list l) {
   f.expr = l;
   return (f);
 }
-
-/*---------------------------------------------------------/
-
-  Define '+', '-', '*', inv' and 'tp'
-
-/---------------------------------------------------------*/
 
 // Addition
 proc ncratAdd(ncrat f, ncrat g) {
@@ -826,12 +917,6 @@ proc ncratTranspose(ncrat f) {
   ncrat h = "Tp", list(f);
   return (h);
 }
-
-/*---------------------------------------------------------/
-
-  Printing of 'ncrat' objects
-
-/---------------------------------------------------------*/
 
 // Print rational function to string
 proc ncratSPrint(ncrat f) {
@@ -888,64 +973,7 @@ proc ncratSPrint(ncrat f) {
 // Print rational function to console
 proc ncratPrint(ncrat f) { print(ncratSPrint(f)); }
 
-/*---------------------------------------------------------/
-
-  DEALING WITH INPUT
-
-/---------------------------------------------------------*/
-
-/*---------------------------------------------------------/
-
-  Input for ncrat function
-  according to the following grammar
-
-    Expression:
-        Term
-        Expression "+" Term
-        Expression "-" Term
-
-    Term:
-        Secondary
-        Term "*" Secondary
-
-    Secondary:
-        Primary
-        Primary "^" int
-        Primary "/" Primary
-
-    Primary:
-        Number
-        "(" Expression ")"
-        "+" Primary
-        "-" Primary
-        "inv(" Expression ")"
-        "tp(" Expression ")"
-        Name
-
-    Number:
-        digit
-        Number digit
-
-    Name:
-        letter
-        letter Sequence
-
-    Sequence:
-        letter
-        digit
-        "_"
-        letter Sequence
-        digit Sequence
-        "_" Sequence
-
-/---------------------------------------------------------*/
-
-/*---------------------------------------------------------/
-
-  Read string into ncrat
-
-/---------------------------------------------------------*/
-
+// Read string into ncrat
 proc ncratFromString(string s) {
   // Clear tokenstream
   TOKENSTREAM.input = s;
@@ -956,54 +984,49 @@ proc ncratFromString(string s) {
   return (f);
 }
 
-/*---------------------------------------------------------/
-
-  Convert poly to ncrat
-
-/---------------------------------------------------------*/
-
+// Convert poly to ncrat
 proc ncratFromPoly(poly p) {
   string s = print(p);
   ncrat f = ncratFromString(s);
   return (f);
 }
 
-/*---------------------------------------------------------/
+// Integer powers of rational functions
+proc ncratPower(ncrat f, int n) {
+  if (n < 0) {
+    return (ncratInvert(ncratPower(f, -n)));
+  }
 
-  DEALING WITH INPUT
+  if (n == 0) {
+    return (ncratFromString("1"));
+  }
 
-  END OF SECTION
+  if (n == 1) {
+    return (f);
+  }
 
-/---------------------------------------------------------*/
-
-/*---------------------------------------------------------/
-
-  REPRESENTATIONS AND LINEARIZATION
-
-/---------------------------------------------------------*/
-
-/*---------------------------------------------------------/
-
-  Make print format
-
-/---------------------------------------------------------*/
-
-// Print linearization to console
-proc ncrepPrint(ncrep q) {
-  print("lvec=");
-  print(q.lvec);
-  print(newline + "mat=");
-  print(q.mat);
-  print(newline + "rvec=");
-  print(q.rvec);
+  return (ncratPower(f, n - 1) * f);
 }
 
-/*---------------------------------------------------------/
+/*##########################################################
 
-  Get a representation of given rational function.
+  #pragma endregion NCRAT
 
-/---------------------------------------------------------*/
+##########################################################*/
 
+/*##########################################################
+
+  #pragma region NCREP
+
+##########################################################*/
+
+/*##########################################################
+
+  #pragma endregion NCREP
+
+##########################################################*/
+
+// Get representation of rational function
 proc ncrepGet(ncrat f) {
   ncrep q;
 
@@ -1061,74 +1084,6 @@ proc ncrepGet(ncrat f) {
   }
 }
 
-/*---------------------------------------------------------/
-
-  REPRESENTATIONS AND LINEARIZATION
-
-  END OF SECTION
-
-/---------------------------------------------------------*/
-
-/*---------------------------------------------------------/
-
-  Evaluation at matrix point
-
-/---------------------------------------------------------*/
-
-// Replace variable xi by matrix Ai in q.mat
-// list(A1, x1, A2, x2, ...) matrix, poly
-proc ncrepSubstractstitute(ncrep q, list #) {
-  int length = size(#);
-
-  // List empty
-  if (length == 0) {
-    return (q.mat);
-  }
-
-  // List odd length
-  if (length % 2 == 1) {
-    ERROR("List has odd length!");
-  }
-
-  // List non-empty
-  def A = #[1];
-  def p = #[2];
-  if (not(typeof(A) == "matrix" or typeof(A) == "number" or
-          typeof(A) == "int") or
-      not(typeof(p) == "poly")) {
-    ERROR("Invalid argument!")
-  }
-
-  int N = ncols(A);
-  matrix M = ncTensorMat(q.mat, N);
-  M = ncSubMat(M, A, p);
-
-  int i;
-  for (i = 1; i < length; i = i + 2) {
-    A = #[i];
-    p = #[i + 1];
-    if (not(typeof(A) == "matrix" or typeof(A) == "number" or
-            typeof(A) == "int") or
-        not(typeof(p) == "poly")) {
-      ERROR("Invalid argument!")
-    }
-    M = ncSubMat(M, A, p);
-  }
-
-  ncrep q2;
-  q2.mat = M;
-  q2.lvec = ncTensorMat(q.lvec, N);
-  q2.rvec = ncTensorMat(q.rvec, N);
-
-  return (q2);
-}
-
-// Given representation (u, Q, v) calculate -u*Q^(-1)*v
-proc ncrepEvaluate(ncrep q) {
-  matrix M = -q.lvec * inverse(q.mat) * q.rvec;
-  return (M);
-}
-
 // Handle sums
 proc ncrepAdd(ncrep s, ncrep t) {
   ncrep q;
@@ -1184,25 +1139,69 @@ proc ncrepInvert(ncrep s) {
   return (q);
 }
 
-/*
-  Handle transposes
-
-  If q = (u, Q, v) is a formal linear representation of
-  a rational function r, then obviously q* = (v*, Q*, u*)
-  yields a representation of r*.
-*/
-
-// THIS CODE DOES NOT WHAT IT IS SUPPOSED TO DO
-
-/*
-static proc ncrepTp(ncrep s) {
-  ncrep q;
-  q.lvec = transpose(s.rvec);
-  q.rvec = transpose(s.lvec);
-  q.mat = transpose(s.mat);
-  return (q);
+// Print representation to console
+proc ncrepPrint(ncrep q) {
+  print("lvec=");
+  print(q.lvec);
+  print(newline + "mat=");
+  print(q.mat);
+  print(newline + "rvec=");
+  print(q.rvec);
 }
-*/
+
+// Replace variable xi by matrix Ai in q.mat
+// list(A1, x1, A2, x2, ...), A_i matrix, x_i poly
+proc ncrepSubstitute(ncrep q, list #) {
+  int length = size(#);
+
+  // List empty
+  if (length == 0) {
+    return (q.mat);
+  }
+
+  // List odd length
+  if (length % 2 == 1) {
+    ERROR("List has odd length!");
+  }
+
+  // List non-empty
+  def A = #[1];
+  def p = #[2];
+  if (not(typeof(A) == "matrix" or typeof(A) == "number" or
+          typeof(A) == "int") or
+      not(typeof(p) == "poly")) {
+    ERROR("Invalid argument!")
+  }
+
+  int N = ncols(A);
+  matrix M = ncTensorMat(q.mat, N);
+  M = ncSubMat(M, A, p);
+
+  int i;
+  for (i = 1; i < length; i = i + 2) {
+    A = #[i];
+    p = #[i + 1];
+    if (not(typeof(A) == "matrix" or typeof(A) == "number" or
+            typeof(A) == "int") or
+        not(typeof(p) == "poly")) {
+      ERROR("Invalid argument!")
+    }
+    M = ncSubMat(M, A, p);
+  }
+
+  ncrep q2;
+  q2.mat = M;
+  q2.lvec = ncTensorMat(q.lvec, N);
+  q2.rvec = ncTensorMat(q.rvec, N);
+
+  return (q2);
+}
+
+// Evaluate representation (u, Q, v) to -u*Q^(-1)*v
+proc ncrepEvaluate(ncrep q) {
+  matrix M = -q.lvec * inverse(q.mat) * q.rvec;
+  return (M);
+}
 
 /*---------------------------------------------------------/
 
@@ -1213,7 +1212,6 @@ static proc ncrepTp(ncrep s) {
   variables which occur in q.
 
 /---------------------------------------------------------*/
-
 proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
   int N = size(vars);
   int i, k;
@@ -1225,7 +1223,7 @@ proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
       l = l + list(A(k), vars[k]);
       kill(A(k));
     }
-    ncrep q2 = ncrepSubstractstitute(q, l);
+    ncrep q2 = ncrepSubstitute(q, l);
     kill(l);
 
     // Check for invertibility
@@ -1238,30 +1236,8 @@ proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
   return (0);
 }
 
-/*---------------------------------------------------------/
-
-  Integer powers of rational functions
-
-/---------------------------------------------------------*/
-
-proc ncratPower(ncrat f, int n) {
-  if (n < 0) {
-    return (ncratInvert(ncratPower(f, -n)));
-  }
-
-  if (n == 0) {
-    return (ncratFromString("1"));
-  }
-
-  if (n == 1) {
-    return (f);
-  }
-
-  return (ncratPower(f, n - 1) * f);
-}
-
-/*########################################################/*
+/*##########################################################
 
   #pragma endregion NON-STATIC PROCEDURES
 
-/*########################################################/*
+##########################################################*/

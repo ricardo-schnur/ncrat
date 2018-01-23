@@ -1,13 +1,46 @@
 ////////////////////////////////////////////////////////////
-version = "version ncrat.lib 0.0.0.1 Dec_2017 ";
-category = "Noncommutative";
+version="version ncrat.lib 1.0.0.0 Jan_2018 "; // $Id$
+category="Noncommutative";
 info="
-LIBRARY:  ncrat.lib Tools for working with nc rational functions
-AUTHOR:   Ricardo Schnur, email: ricardo.schnur@math.uni-sb.de
+LIBRARY:      ncrat.lib Framework for working with nc rational functions
 
-KEYWORDS: noncommutative rational functions, representations
+AUTHOR:       Ricardo Schnur, email: ricardo.schnur@math.uni-sb.de
+
+OVERVIEW:     This library provides a framework for working with
+  non-commutative rational functions and implements an
+  algorithm from T. Mai to calculate a linear
+  representation of said functions.
+
+REFERENCES:   T. Mai: On the analytic theory of non-commutative
+   distributions in free probability. Universitaet des Saarlandes,
+   Dissertation, 2017
+
+KEYWORDS:     noncommutative rational functions, representations
 
 PROCEDURES:
+  ncInit(list);             Set up framework, list contains nc variables
+  ncVarsGet();              List nc variables that are in use
+  ncVarsAdd(list);          Add variables from list to 'NCRING'
+  ncratDefine();            Define element of type ncrat
+  ncratAdd();               Addition of two ncrat's
+  ncratSubstract();         Substraction of two ncrat's
+  ncratMultiply();          Multiplication of two ncrat's
+  ncratInvert();            Invert an ncrat
+  ncratTranspose();         Transpose an ncrat
+  ncratSPrint();            Print-to-string for ncrat
+  ncratPrint();             Print for ncrat
+  ncratFromString();        Reads string into ncrat
+  ncratFromPoly();          Converts poly to ncrat
+  ncratPower(ncrat, int);   Raises ncrat to an integer power
+  ncrepGet(ncrat);          Calculate representtion of ncrat
+  ncrepAdd();               Addition of two ncrep's
+  ncrepSubstract();         Substraction of two ncrep's
+  ncrepMultiply();          Multiplication of two ncrep's
+  ncrepInvert();            Invert an ncrep
+  ncrepPrint();             Print for ncrep
+  ncrepSubstitute();        Plug matrices into nc variables in ncrep
+  ncrepEvaluate();          Given (u, Q, v) calculate -u*Q^(-1)*v
+  ncrepIsInvertible();      Random matrix test for invertibility of ncrep
 ";
 
 LIB "linalg.lib";
@@ -16,19 +49,19 @@ LIB "random.lib";
 
 /*##########################################################
 
-  #pragma region STATIC PROCEDURES
+   STATIC PROCEDURES
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region GENERAL
+   GENERAL
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region STRING
+   STRING
 
 ##########################################################*/
 
@@ -150,13 +183,13 @@ static proc stringToNumber(string s) {
 
 /*##########################################################
 
-  #pragma endregion STRING
+  END STRING
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region TOKEN
+   TOKEN
 
 ##########################################################*/
 
@@ -331,13 +364,13 @@ static proc tsGet() {
 
 /*##########################################################
 
-  #pragma endregion TOKEN
+  END TOKEN
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region GRAMMAR
+   GRAMMAR
 
 ##########################################################*/
 
@@ -546,21 +579,46 @@ static proc expression() {
 
 /*##########################################################
 
-  #pragma endregion GRAMMAR
+  END GRAMMAR
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma endregion GENERAL
+  END GENERAL
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region NCRAT
+   NCRAT
 
 ##########################################################*/
+
+// Define ring 'NCRING' with variables from list
+static proc ncRingDefine() {
+  // Kill old ring if it already exists
+  if (not(defined(NCRING) == 0)) {
+    kill(NCRING);
+  }
+
+  // Build new ring
+  int i;
+  string s;
+
+  s = "ring NCRING = (0, I), (";
+  for (i = 1; i <= size(NCVARIABLES); i++) {
+    if (i == 1) {
+      s = s + NCVARIABLES[i];
+    } else {
+      s = s + ", " + NCVARIABLES[i];
+    }
+  }
+  s = s + "), dp; minpoly = I^2+1;";
+  execute(s);
+  short = 0;
+  exportto(Top, NCRING);
+}
 
 static proc ncratIsValid(string s, list l) {
 
@@ -602,27 +660,15 @@ static proc ncratIsValid(string s, list l) {
 
 /*##########################################################
 
-  #pragma endregion NCRAT
+  END NCRAT
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region NCREP
+   NCREP
 
 ##########################################################*/
-
-/*##########################################################
-
-  #pragma endregion NCREP
-
-##########################################################*/
-
-/*---------------------------------------------------------/
-
-  Implement algorithm for formal linear representations
-
-/---------------------------------------------------------*/
 
 // Handle constants
 static proc ncrepConst(number n) {
@@ -680,24 +726,41 @@ static proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
 
 /*##########################################################
 
-  #pragma endregion STATIC PROCEDURES
+  END NCREP
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region NON-STATIC PROCEDURES
+  END STATIC PROCEDURES
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region GENERAL
+   NON-STATIC PROCEDURES
 
 ##########################################################*/
 
-// Initialize datastructures
-proc ncInit(list vars) {
+/*##########################################################
+
+   GENERAL
+
+##########################################################*/
+
+proc ncInit(list vars) "
+USAGE:
+  ncInit(vars);        list vars containing strings
+
+RETURNS:
+  datatypes ncrat and ncrep (and token, tokenstream,
+  but they are not meant for users),
+  sets ring as 'NCRING' with nc variables from list l
+
+EXAMPLE:
+  example ncInit;      shows an example
+"
+{
   // Check if already initialized
   if (defined(NCRATINITIALIZE)) {
     return ();
@@ -758,10 +821,10 @@ proc ncInit(list vars) {
 
 
   newstruct("tokenstream", "
-    int full,       
-    int position,   
-    token buffer,   
-    string input    
+    int full,
+    int position,
+    token buffer,
+    string input
   ");
 
 
@@ -794,34 +857,34 @@ proc ncInit(list vars) {
 
   ncRingDefine();
 }
-
-// Define ring 'NCRING' with variables from list
-proc ncRingDefine() {
-  // Kill old ring if it already exists
-  if (not(defined(NCRING) == 0)) {
-    kill(NCRING);
-  }
-
-  // Build new ring
-  int i;
-  string s;
-
-  s = "ring NCRING = (0, I), (";
-  for (i = 1; i <= size(NCVARIABLES); i++) {
-    if (i == 1) {
-      s = s + NCVARIABLES[i];
-    } else {
-      s = s + ", " + NCVARIABLES[i];
-    }
-  }
-  s = s + "), dp; minpoly = I^2+1;";
-  execute(s);
-  short = 0;
-  exportto(Top, NCRING);
+example {
+  "EXAMPLE:";
+  "ncInit(list(\" x \", \" y \", \" z \"));";
+  ncInit(list("x", "y", "z"));
+  "NCRING;";
+  NCRING;
 }
 
-// List nc variables that are in use
-proc ncVarsGet() { string(NCVARIABLES); }
+proc ncVarsGet() "
+USAGE:
+  ncVarsGet();
+
+RETURNS:
+  nc variables that are in use
+
+EXAMPLE:
+  example ncVarsGet;   shows an example
+"
+{
+  string(NCVARIABLES);
+}
+example {
+  "EXAMPLE:";
+  "ncInit(list(\" x \", \" y \", \" z \"));";
+  ncInit(list("x", "y", "z"));
+  "ncVarsGet();";
+  ncVarsGet();
+}
 
 // Add variables to 'NCRING'
 proc ncVarsAdd(list vars) {
@@ -846,13 +909,13 @@ proc ncVarsAdd(list vars) {
 
 /*##########################################################
 
-  #pragma endregion GENERAL
+  END GENERAL
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region NCRAT
+   NCRAT
 
 ##########################################################*/
 
@@ -1010,19 +1073,13 @@ proc ncratPower(ncrat f, int n) {
 
 /*##########################################################
 
-  #pragma endregion NCRAT
+  END NCRAT
 
 ##########################################################*/
 
 /*##########################################################
 
-  #pragma region NCREP
-
-##########################################################*/
-
-/*##########################################################
-
-  #pragma endregion NCREP
+   NCREP
 
 ##########################################################*/
 
@@ -1197,7 +1254,7 @@ proc ncrepSubstitute(ncrep q, list #) {
   return (q2);
 }
 
-// Evaluate representation (u, Q, v) to -u*Q^(-1)*v
+// For representation (u, Q, v) calculate -u*Q^(-1)*v
 proc ncrepEvaluate(ncrep q) {
   matrix M = -q.lvec * inverse(q.mat) * q.rvec;
   return (M);
@@ -1238,6 +1295,12 @@ proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
 
 /*##########################################################
 
-  #pragma endregion NON-STATIC PROCEDURES
+  END NCREP
+
+##########################################################*/
+
+/*##########################################################
+
+  END NON-STATIC PROCEDURES
 
 ##########################################################*/

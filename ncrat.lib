@@ -748,18 +748,17 @@ static proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
 
 ##########################################################*/
 
-proc ncInit(list vars) "
-USAGE:
-  ncInit(vars);        list vars containing strings
+proc ncInit(list vars)
+"USAGE:   ncInit(vars);
+  list vars containing strings
 
-RETURNS:
+RETURN:
   datatypes ncrat and ncrep (and token, tokenstream,
   but they are not meant for users),
   sets ring as 'NCRING' with nc variables from list l
 
-EXAMPLE:
-  example ncInit;      shows an example
-"
+EXAMPLE:  example ncInit;
+  shows an example"
 {
   // Check if already initialized
   if (defined(NCRATINITIALIZE)) {
@@ -840,6 +839,9 @@ EXAMPLE:
   system("install", "ncrat", "*", ncratMultiply, 2);
   system("install", "ncrat", "^", ncratPower, 2);
   system("install", "ncrat", "print", ncratPrint, 1);
+  system("install", "ncrep", "+", ncrepAdd, 2);
+  system("install", "ncrep", "-", ncrepSubstract, 2);
+  system("install", "ncrep", "*", ncrepMultiply, 2);
   system("install", "ncrep", "print", ncrepPrint, 1);
 
 
@@ -859,35 +861,39 @@ EXAMPLE:
 }
 example {
   "EXAMPLE:";
-  "ncInit(list(\" x \", \" y \", \" z \"));";
+  echo = 2;
   ncInit(list("x", "y", "z"));
-  "NCRING;";
   NCRING;
 }
 
-proc ncVarsGet() "
-USAGE:
-  ncVarsGet();
+proc ncVarsGet()
+"USAGE:   ncVarsGet();
 
 RETURNS:
   nc variables that are in use
 
-EXAMPLE:
-  example ncVarsGet;   shows an example
-"
+EXAMPLE:  example ncVarsGet;
+shows an example"
 {
   string(NCVARIABLES);
 }
 example {
   "EXAMPLE:";
-  "ncInit(list(\" x \", \" y \", \" z \"));";
+  echo = 2;
   ncInit(list("x", "y", "z"));
-  "ncVarsGet();";
   ncVarsGet();
 }
 
-// Add variables to 'NCRING'
-proc ncVarsAdd(list vars) {
+proc ncVarsAdd(list vars)
+"USAGE:   ncVarsAdd(vars);
+  list vars contains variables
+
+RETURNS:
+  sets list elements as nc variables
+
+EXAMPLE:  example ncVarsAdd;
+shows an example"
+{
   int i, j;
   int exists = 0;
 
@@ -906,6 +912,14 @@ proc ncVarsAdd(list vars) {
 
   ncRingDefine();
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncVarsGet();
+  ncVarsAdd(list("a", "b", "c"));
+  ncVarsGet();
+}
 
 /*##########################################################
 
@@ -919,8 +933,22 @@ proc ncVarsAdd(list vars) {
 
 ##########################################################*/
 
-// Definition of elements of type 'ncrat'
-proc ncratDefine(string s, list l) {
+proc ncratDefine(string s, list l)
+"USAGE:   ncrat f = ncratDefine(s, l);
+  string s contains kind, list l contains expressions
+
+RETURN:   ncrat with kind s and expressions l
+
+NOTE:
+  assignment operator '=' for ncrat is overloaded
+  with this procedure, hence
+      ncrat f = s, l;
+  yields the same result as
+      ncrat f = ncratDefine(s, l);
+
+EXAMPLE:  example ncratDefine;
+  shows an example"
+{
   if (not(ncratIsValid(s, l))) {
     ERROR("Not a valid rational expression!");
   }
@@ -930,21 +958,104 @@ proc ncratDefine(string s, list l) {
   f.expr = l;
   return (f);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  number n = 5;
+  ncrat f = ncratDefine("Const", list(n));
+  typeof(f);
+  f.kind;
+  f.expr;
+  f;
+  ncrat g = "Const", list(n);
+  g;
+}
 
-// Addition
-proc ncratAdd(ncrat f, ncrat g) {
+proc ncratAdd(ncrat f, ncrat g)
+"USAGE:   ncrat h = ncratAdd(f, g);
+  f, g both of type ncrat
+
+RETURN:   h = f + g
+
+NOTE:
+  operator '+' for ncrat is overloaded
+  with this procedure, hence
+      ncrat h = f + g;
+  yields the same result as
+      ncrat h = ncratAdd(f, g);
+
+EXAMPLE:  example ncratAdd;
+  shows an example"
+{
   ncrat h = "Add", list(f, g);
   return (h);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  print(f);
+  ncrat g = ncratFromString("z");
+  print(g);
+  ncrat h1, h2;
+  h1 = ncratAdd(f, g);
+  print(h1);
+  h2 = f + g;
+  print(h2);
+}
 
-// Substraction
-proc ncratSubstract(ncrat f, ncrat g) {
+proc ncratSubstract(ncrat f, ncrat g)
+"USAGE:   ncrat h = ncratSubstract(f, g);
+  f, g both of type ncrat
+
+RETURN:   h = f - g
+
+NOTE:
+  operator '-' for ncrat is overloaded
+  with this procedure, hence
+      ncrat h = f - g;
+  yields the same result as
+      ncrat h = ncratSubstract(f, g);
+
+EXAMPLE:  example ncratSubstract;
+  shows an example"
+{
   ncrat h = "Sub", list(f, g);
   return (h);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  print(f);
+  ncrat g = ncratFromString("z");
+  print(g);
+  ncrat h1, h2;
+  h1 = ncratSubstract(f, g);
+  print(h1);
+  h2 = f - g;
+  print(h2);
+}
 
-// Multiplication
-proc ncratMultiply(ncrat f, ncrat g) {
+proc ncratMultiply(ncrat f, ncrat g)
+"USAGE:   ncrat h = ncratMultiply(f, g);
+  f, g both of type ncrat
+
+RETURN:   h = f * g
+
+NOTE:
+  operator '*' for ncrat is overloaded
+  with this procedure, hence
+      ncrat h = f * g;
+  yields the same result as
+      ncrat h = ncratMultiply(f, g);
+
+EXAMPLE:  example ncratMultiply;
+  shows an example"
+ {
   // Both factors are constants
   if (f.kind == "Const" and g.kind == "Const") {
     ncrat h = "Const", list(f.expr[1] * g.expr[1]);
@@ -961,9 +1072,35 @@ proc ncratMultiply(ncrat f, ncrat g) {
   ncrat h = "Mult", list(f, g);
   return (h);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  print(f);
+  ncrat g = ncratFromString("z");
+  print(g);
+  ncrat h1, h2;
+  h1 = ncratMultiply(f, g);
+  print(h1);
+  h2 = f * g;
+  print(h2);
+}
 
-// Inversion
-proc ncratInvert(ncrat f) {
+proc ncratInvert(ncrat f)
+"USAGE:   ncrat h = ncratInvert(f);
+  f of type ncrat
+
+RETURN:   h = inv(f)
+
+NOTE:
+      ncrat h = f^-1;
+  yields the same result as
+      ncrat h = ncratInvert(f);
+
+EXAMPLE:  example ncratInvert;
+  shows an example"
+ {
   ncrat h;
   if (f.kind == "Const") {
     number n = 1;
@@ -974,15 +1111,50 @@ proc ncratInvert(ncrat f) {
   }
   return (h);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  print(f);
+  ncrat h1, h2;
+  h1 = ncratInvert(f);
+  print(h1);
+  h2 = f^-1;
+  print(h2);
+}
 
-// Involution
-proc ncratTranspose(ncrat f) {
+proc ncratTranspose(ncrat f)
+"USAGE:   ncrat h = ncratTranspose(f);
+  f of type ncrat
+
+RETURN:   h = tp(f)
+
+EXAMPLE:  example ncratTranspose;
+  shows an example"
+{
   ncrat h = "Tp", list(f);
   return (h);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  print(f);
+  ncrat h = ncratTranspose(f);
+  print(h);
+}
 
-// Print rational function to string
-proc ncratSPrint(ncrat f) {
+proc ncratSPrint(ncrat f)
+"USAGE:   string s = ncratSPrint(f);
+  f of type ncrat
+
+RETURN:   prints f to string
+
+EXAMPLE:  example ncratSPrint;
+  shows an example"
+{
   string t, h, k;
   string s = f.kind;
   list l = f.expr;
@@ -1032,12 +1204,49 @@ proc ncratSPrint(ncrat f) {
 
   return (t);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  string s = ncratSPrint(f);
+  print(s);
+}
 
-// Print rational function to console
-proc ncratPrint(ncrat f) { print(ncratSPrint(f)); }
+proc ncratPrint(ncrat f)
+"USAGE:   ncratPrint(f);
+  f of type ncrat
 
-// Read string into ncrat
-proc ncratFromString(string s) {
+RETURN:   prints f
+
+NOTE:
+      print(f);
+  yields the same result as
+      ncratPrint(f);
+
+EXAMPLE:  example ncratPrint;
+  shows an example"
+{
+  print(ncratSPrint(f));
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  ncratPrint(f);
+  print(f);
+}
+
+proc ncratFromString(string s)
+"USAGE:   ncrat f = ncratFromString(s);
+  s of type string
+
+RETURN:   read string s into ncrat f
+
+EXAMPLE:  example ncratFromString;
+  shows an example"
+{
   // Clear tokenstream
   TOKENSTREAM.input = s;
   TOKENSTREAM.position = 1;
@@ -1046,16 +1255,45 @@ proc ncratFromString(string s) {
   ncrat f = expression();
   return (f);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  print(f);
+}
 
-// Convert poly to ncrat
-proc ncratFromPoly(poly p) {
+proc ncratFromPoly(poly p)
+"USAGE:   ncrat f = ncratFromPoly(p);
+  p of type poly
+
+RETURN:   convert poly to ncrat
+
+EXAMPLE:  example ncratFromPoly;
+  shows an example"
+{
   string s = print(p);
   ncrat f = ncratFromString(s);
   return (f);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  poly p = 2*x*y;
+  ncrat f = ncratFromPoly(p);
+  print(f);
+}
 
-// Integer powers of rational functions
-proc ncratPower(ncrat f, int n) {
+proc ncratPower(ncrat f, int n)
+"USAGE:   ncrat h = ncratPower(f, n);
+  f of type ncrat, n integer
+
+RETURN:   h = f^n
+
+EXAMPLE:  example ncratPower;
+  shows an example"
+ {
   if (n < 0) {
     return (ncratInvert(ncratPower(f, -n)));
   }
@@ -1070,6 +1308,14 @@ proc ncratPower(ncrat f, int n) {
 
   return (ncratPower(f, n - 1) * f);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  ncrat h = ncratPower(f, 3);
+  print(h);
+}
 
 /*##########################################################
 
@@ -1083,8 +1329,15 @@ proc ncratPower(ncrat f, int n) {
 
 ##########################################################*/
 
-// Get representation of rational function
-proc ncrepGet(ncrat f) {
+proc ncrepGet(ncrat f)
+"USAGE:   ncrep q = ncrepGet(f);
+  f of type ncrat
+
+RETURN:   q = (u, Q, v) linear representation of f
+
+EXAMPLE:  example ncrepGet;
+  shows an example"
+ {
   ncrep q;
 
   // switch on f.kind
@@ -1140,27 +1393,108 @@ proc ncrepGet(ncrat f) {
     return (q);
   }
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  ncrep q = ncrepGet(f);
+  print(q);
+}
 
-// Handle sums
-proc ncrepAdd(ncrep s, ncrep t) {
+proc ncrepAdd(ncrep s, ncrep t)
+"USAGE:   ncrep s = ncrepAdd(q, r);
+  q, r both of type ncrep
+
+RETURN:   representation s of h = f + g
+  if q, r are representations of f, g
+
+NOTE:
+  operator '+' for ncrep is overloaded
+  with this procedure, hence
+      ncrep s = q + r;
+  yields the same result as
+      ncrep s = ncrepAdd(q, r);
+
+EXAMPLE:  example ncrepAdd;
+  shows an example"
+{
   ncrep q;
   q.lvec = concat(s.lvec, t.lvec);
   q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
   q.mat = dsum(s.mat, t.mat);
   return (q);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("x");
+  ncrat g = ncratFromString("y");
+  ncrep q = ncrepGet(f);
+  ncrep r = ncrepGet(g);
+  ncrep s1, s2;
+  s1 = ncrepAdd(q, r);
+  print(s1);
+  s2 = q + r;
+  print(s2);
+}
 
-// Handle differences
-proc ncrepSubstract(ncrep s, ncrep t) {
+proc ncrepSubstract(ncrep s, ncrep t)
+"USAGE:   ncrep s = ncrepSubstract(q, r);
+  q, r both of type ncrep
+
+RETURN:   representation s of h = f - g
+  if q, r are representations of f, g
+
+NOTE:
+  operator '-' for ncrep is overloaded
+  with this procedure, hence
+      ncrep s = q - r;
+  yields the same result as
+      ncrep s = ncrepSubstract(q, r);
+
+EXAMPLE:  example ncrepSubstract;
+  shows an example"
+{
   ncrep q;
   q.lvec = concat(s.lvec, t.lvec);
   q.rvec = transpose(concat(transpose(s.rvec), transpose(t.rvec)));
   q.mat = dsum(s.mat, -t.mat);
   return (q);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("x");
+  ncrat g = ncratFromString("y");
+  ncrep q = ncrepGet(f);
+  ncrep r = ncrepGet(g);
+  ncrep s1, s2;
+  s1 = ncrepSubstract(q, r);
+  print(s1);
+  s2 = q - r;
+  print(s2);
+}
 
-// Handle products
-proc ncrepMultiply(ncrep s, ncrep t) {
+proc ncrepMultiply(ncrep s, ncrep t)
+"USAGE:   ncrep s = ncrepMultiply(q, r);
+  q, r both of type ncrep
+
+RETURN:   representation s of h = f * g
+  if q, r are representations of f, g
+
+NOTE:
+  operator '*' for ncrep is overloaded
+  with this procedure, hence
+      ncrep s = q * r;
+  yields the same result as
+      ncrep s = ncrepMultiply(q, r);
+
+EXAMPLE:  example ncrepMultiply;
+  shows an example"
+ {
   ncrep q;
   int dims = ncols(s.lvec);
   int dimt = ncols(t.lvec);
@@ -1177,9 +1511,31 @@ proc ncrepMultiply(ncrep s, ncrep t) {
 
   return (q);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("x");
+  ncrat g = ncratFromString("y");
+  ncrep q = ncrepGet(f);
+  ncrep r = ncrepGet(g);
+  ncrep s1, s2;
+  s1 = ncrepMultiply(q, r);
+  print(s1);
+  s2 = q * r;
+  print(s2);
+}
 
-// Handle inverses
-proc ncrepInvert(ncrep s) {
+proc ncrepInvert(ncrep s)
+"USAGE:   ncrep s = ncrepInvert(q);
+  q of type ncrep
+
+RETURN:   representation of h = inv(f)
+  if q is a representation of f
+
+EXAMPLE:  example ncrepInvert;
+  shows an example"
+{
   ncrep q;
   int n = ncols(s.lvec);
   matrix one[1][1] = 1;
@@ -1195,9 +1551,30 @@ proc ncrepInvert(ncrep s) {
 
   return (q);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  ncrep q = ncrepGet(f);
+  ncrep s = ncrepInvert(q);
+  print(s);
+}
 
-// Print representation to console
-proc ncrepPrint(ncrep q) {
+proc ncrepPrint(ncrep q)
+"USAGE:   ncrepPrint(q);
+  q of type ncrat
+
+RETURN:   prints q
+
+NOTE:
+      print(q);
+  yields the same result as
+      ncrepPrint(q);
+
+EXAMPLE:  example ncrepPrint;
+  shows an example"
+{
   print("lvec=");
   print(q.lvec);
   print(newline + "mat=");
@@ -1205,10 +1582,27 @@ proc ncrepPrint(ncrep q) {
   print(newline + "rvec=");
   print(q.rvec);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("2*x*y");
+  ncrep q = ncrepGet(f);
+  ncrepPrint(q);
+  print(q);
+}
 
-// Replace variable xi by matrix Ai in q.mat
-// list(A1, x1, A2, x2, ...), A_i matrix, x_i poly
-proc ncrepSubstitute(ncrep q, list #) {
+proc ncrepSubstitute(ncrep q, list #)
+"USAGE:   ncrep s = ncrepSubstitute(q, l);
+  q of type ncrat, l = (A1, x1, A2, x2, ...) list
+  with  Ai matrices of the same dimension and
+  xi of type poly are nc variables
+
+RETURN:   substitutes in Ai for xi in q
+
+EXAMPLE:  example ncrepSubstitute;
+  shows an example"
+{
   int length = size(#);
 
   // List empty
@@ -1253,23 +1647,62 @@ proc ncrepSubstitute(ncrep q, list #) {
 
   return (q2);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("x+y");
+  ncrep q = ncrepGet(f);
+  matrix A[2][2] = 1, 2, 3, 4;
+  matrix B[2][2] = 5, 6, 7, 8;
+  ncrep s = ncrepSubstitute(q, list(A, x, B, y));
+  print(q);
+  print(s);
+}
 
-// For representation (u, Q, v) calculate -u*Q^(-1)*v
-proc ncrepEvaluate(ncrep q) {
+proc ncrepEvaluate(ncrep q)
+"USAGE:   matrix M = ncrepEvaluate(q);
+  q of type ncrat
+
+RETURN:   for q=(u, Q, v) calculate -u*Q^(-1)*v
+
+EXAMPLE:  example ncrepEvaluate;
+  shows an example"
+{
   matrix M = -q.lvec * inverse(q.mat) * q.rvec;
   return (M);
 }
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("x+y");
+  ncrep q = ncrepGet(f);
+  matrix A[2][2] = 1, 2, 3, 4;
+  matrix B[2][2] = 5, 6, 7, 8;
+  ncrep s = ncrepSubstitute(q, list(A, x, B, y));
+  matrix M = ncrepEvaluate(s);
+  print(M);
+}
 
-/*---------------------------------------------------------/
+proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff)
+"USAGE:   int dim = ncrepIsInvertible(q, vars, n, maxcoeff);
 
-  Test whether q.mat is invertible via evaluation
+RETURN:   Integer dim such that:
+  If dim > 0 then there are matrices A1, ..., Ak of size dim
+  such that q is defined at A = (A1, ..., Ak), i.e.,
+  q.mat is invertible at A.
+  If dim = 0 then no such point was found.
+
+NOTE:     Test whether q.mat is invertible via evaluation
   at random matrix points with integer coefficients
   in [-maxcoeff, maxcoeff]. Stops after n tries.
   Use ixi-matrix in i-th try. The list contains the
   variables which occur in q.
 
-/---------------------------------------------------------*/
-proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
+EXAMPLE:  example ncrepIsInvertible;
+  shows an example"
+{
   int N = size(vars);
   int i, k;
   for (i = 1; i <= n; i++) {
@@ -1291,6 +1724,17 @@ proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff) {
     kill(q2);
   }
   return (0);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y", "z"));
+  ncrat f = ncratFromString("inv(x*y-y*x)");
+  ncrep q = ncrepGet(f);
+  ncrepIsInvertible(q, list(x,y), 5, 10);
+  ncrat g = ncratFromString("inv(x-x)");
+  ncrep r = ncrepGet(g);
+  ncrepIsInvertible(r, list(x), 5, 10);
 }
 
 /*##########################################################

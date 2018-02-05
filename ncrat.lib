@@ -726,6 +726,40 @@ static proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
   return (M);
 }
 
+/*
+  list # = (x1, ..., xg) contains the nc variables
+  occuring in g
+  return list(Q0, Q1,... Qg) with scalar matrices Qi s.t.
+    Q = Q0 + Q1*x1 + ... + Qg*xg
+*/
+static proc ncrepLinearPencil(ncrep q, list #) {
+  int g = size(#);
+  int n = ncols(q.mat);
+
+  int i, j, k;
+  poly p;
+  matrix Q(0) = q.mat;
+  for (i = 1; i <= g; i++) {
+    matrix Q(i)[n][n];
+    for (j = 1; j <= n; j++) {
+      for (k = 1; k <= n; k++) {
+        p = Q(0)[j, k] / #[i];
+        if (not(p == 0)) {
+          Q(i)[j, k] = p;
+        }
+      }
+    }
+    Q(0) = Q(0) - #[i] * Q(i);
+  }
+
+  list l;
+  for (i = 0; i <= g; i++) {
+    l = l + list(Q(i));
+  }
+
+  return (l);
+}
+
 /*##########################################################
 
    REGULAR CASE
@@ -739,43 +773,33 @@ static proc ncSubMat(matrix M, matrix A, poly VARIABLE) {
   # - contains occuring ncvariables as 'poly'
   Returns list(B, C, l) with l = list(A1, ..., Ag) such that
   -u*Q^-1*v = C * (1 - A1*x1 - ... - Ag*xg)^-1 * B.
+
+  ASSUMPTION: q.mat has to be regular at zero
 */
 static proc ncrepToMonicDescriptorRealization(int g, int n, ncrep q, list #) {
   if (not(size(#) == g)) {
     ERROR("List has wrong size!");
   }
-  int i;
-  list l;
-  ncrep s = q;
-  for (i = 1; i <= g; i++) {
-    l = list(0, #[i]);
-    s = ncrepSubstitute(s, l);
-  }
-  kill(l);
-  matrix Q(0) = s.mat;
+
+  list l = ncrepLinearPencil(q, #);
+  matrix Q(0) = l[1];
   matrix S = inverse(Q(0));
 
-  int j, k;
-  poly p;
-  matrix M = q.mat - Q(0);
-  list l;
+  if (size(S) == 1 and S[1, 1] == 0) {
+    ERROR("Q0 has to be invertible!");
+  }
+
+  list k;
+  int i;
   for (i = 1; i <= g; i++) {
-    matrix Q(i)[n][n];
-    for (j = 1; j <= n; j++) {
-      for (k = 1; k <= n; k++) {
-        p = M[j, k] / #[i];
-        if (not(p == 0)) {
-          Q(i)[j, k] = p;
-        }
-      }
-    }
+    matrix Q(i) = l[i + 1];
     matrix A(i) = -S * Q(i);
-    l = l + list(A(i));
+    k = k + list(A(i));
   }
 
   matrix C = -q.lvec;
   matrix B = S * q.rvec;
-  return (list(B, C, l));
+  return (list(B, C, k));
 }
 
 /*
@@ -1870,7 +1894,7 @@ RETURN:   dimension of q
 EXAMPLE:  example ncrepDim;
   shows an example"
 {
-  return(ncols(q.mat));
+  return (ncols(q.mat));
 }
 example {
   "EXAMPLE:";
@@ -1882,62 +1906,45 @@ example {
   ncrepDim(q);
 }
 
-proc ncrepSubstitute(ncrep q, list #)
+proc ncrepSubstitute(ncrep q, list vars, list points)
 "USAGE:     ncrep s = ncrepSubstitute(q, l);
-  q of type ncrat, l = (A1, x1, A2, x2, ...) list
-  with  Ai matrices of the same dimension and
-  xi of type poly are nc variables
+  q of type ncrat, vars = (x1, ..., xg),
+  points = (A1, ... , Ag) with Ai matrices of the
+  same dimension and xi of type poly are nc variables
 
 RETURN:     substitutes in Ai for xi in q
-
-ASSUMPTION: all entries of q.mat are MONOmials;
-  this is always the case if q = ncrepGet(f) for
-  some ncrat f
 
 EXAMPLE:  example ncrepSubstitute;
   shows an example"
 {
-  int length = size(#);
+  int g = size(vars);
+  if (not(size(points) == g)) {
+    ERROR("Number of variables and points does not match!");
+  }
 
-  // List empty
-  if (length == 0) {
+  // Lists empty
+  if (g == 0) {
     return (q.mat);
   }
 
-  // List odd length
-  if (length % 2 == 1) {
-    ERROR("List has odd length!");
-  }
-
-  // List non-empty
-  def A = #[1];
-  def p = #[2];
-  if (not(typeof(A) == "matrix" or typeof(A) == "number" or
-          typeof(A) == "int") or
-      not(typeof(p) == "poly")) {
-    ERROR("Invalid argument!")
-  }
-
-  int N = ncols(A);
-  matrix M = ncTensorMat(q.mat, N);
-  M = ncSubMat(M, A, p);
-
+  // Lists non-empty
   int i;
-  for (i = 1; i < length; i = i + 2) {
-    A = #[i];
-    p = #[i + 1];
-    if (not(typeof(A) == "matrix" or typeof(A) == "number" or
-            typeof(A) == "int") or
-        not(typeof(p) == "poly")) {
-      ERROR("Invalid argument!")
-    }
-    M = ncSubMat(M, A, p);
+  list l = ncrepLinearPencil(q, vars);
+  for (i = 0; i <= g; i++) {
+    matrix Q(i) = l[i + 1];
+  }
+
+  int n = ncols(points[1]);
+  matrix M = ncTensorMat(Q(0), n);
+  for (i = 1; i <= g; i++) {
+    matrix A(i) = points[i];
+    M = M + tensor(Q(i), A(i));
   }
 
   ncrep q2;
   q2.mat = M;
-  q2.lvec = ncTensorMat(q.lvec, N);
-  q2.rvec = ncTensorMat(q.rvec, N);
+  q2.lvec = ncTensorMat(q.lvec, n);
+  q2.rvec = ncTensorMat(q.rvec, n);
 
   return (q2);
 }
@@ -1949,7 +1956,7 @@ example {
   ncrep q = ncrepGet(f);
   matrix A[2][2] = 1, 2, 3, 4;
   matrix B[2][2] = 5, 6, 7, 8;
-  ncrep s = ncrepSubstitute(q, list(A, x, B, y));
+  ncrep s = ncrepSubstitute(q, list(x, y), list(A, B));
   print(q);
   print(s);
 }
@@ -1974,7 +1981,7 @@ example {
   ncrep q = ncrepGet(f);
   matrix A[2][2] = 1, 2, 3, 4;
   matrix B[2][2] = 5, 6, 7, 8;
-  ncrep s = ncrepSubstitute(q, list(A, x, B, y));
+  ncrep s = ncrepSubstitute(q, list(x, y), list(A, B));
   matrix M = ncrepEvaluate(s);
   print(M);
 }
@@ -2001,14 +2008,14 @@ EXAMPLE:  example ncrepIsInvertible;
   int i, k;
   for (i = 1; i <= n; i++) {
     // Substitute random matrices
-    list l;
+    list points;
     for (k = 1; k <= N; k++) {
       matrix A(k) = randommat(i, i, maxideal(0), maxcoeff);
-      l = l + list(A(k), vars[k]);
+      points = points + list(A(k));
       kill(A(k));
     }
-    ncrep q2 = ncrepSubstitute(q, l);
-    kill(l);
+    ncrep q2 = ncrepSubstitute(q, vars, points);
+    kill(points);
 
     // Check for invertibility
     if (mat_rk(q2.mat) == ncols(q2.mat)) {

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.1.0.0 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.1.1.0 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -18,31 +18,32 @@ REFERENCES:   T. Mai: On the analytic theory of non-commutative
 KEYWORDS:     noncommutative rational functions, representations
 
 PROCEDURES:
-  ncInit(list);             Set up framework, list contains nc variables
-  ncVarsGet();              List nc variables that are in use
-  ncVarsAdd(list);          Add variables from list to 'NCRING'
-  ncratDefine();            Define element of type ncrat
-  ncratAdd();               Addition of two ncrat's
-  ncratSubstract();         Substraction of two ncrat's
-  ncratMultiply();          Multiplication of two ncrat's
-  ncratInvert();            Invert an ncrat
-  ncratTranspose();         Transpose an ncrat
-  ncratSPrint();            Print-to-string for ncrat
-  ncratPrint();             Print for ncrat
-  ncratFromString();        Reads string into ncrat
-  ncratFromPoly();          Converts poly to ncrat
-  ncratPower(ncrat, int);   Raises ncrat to an integer power
-  ncrepGet(ncrat);          Calculate representtion of ncrat
-  ncrepAdd();               Addition of two ncrep's
-  ncrepSubstract();         Substraction of two ncrep's
-  ncrepMultiply();          Multiplication of two ncrep's
-  ncrepInvert();            Invert an ncrep
-  ncrepPrint();             Print for ncrep
-  ncrepDim();               Return the size of ncrep
-  ncrepSubstitute();        Plug matrices into nc variables in ncrep
-  ncrepEvaluate();          Given (u, Q, v) calculate -u*Q^(-1)*v
-  ncrepIsInvertible();      Random matrix test for invertibility of ncrep
-  ncrepMinimize();          Yields a minimal representation
+  ncInit(list);                 Set up framework, list contains nc variables
+  ncVarsGet();                  List nc variables that are in use
+  ncVarsAdd(list);              Add variables from list to 'NCRING'
+  ncratDefine();                Define element of type ncrat
+  ncratAdd();                   Addition of two ncrat's
+  ncratSubstract();             Substraction of two ncrat's
+  ncratMultiply();              Multiplication of two ncrat's
+  ncratInvert();                Invert an ncrat
+  ncratTranspose();             Transpose an ncrat
+  ncratSPrint();                Print-to-string for ncrat
+  ncratPrint();                 Print for ncrat
+  ncratFromString();            Reads string into ncrat
+  ncratFromPoly();              Converts poly to ncrat
+  ncratPower(ncrat, int);       Raises ncrat to an integer power
+  ncrepGet(ncrat);              Calculate representtion of ncrat
+  ncrepAdd();                   Addition of two ncrep's
+  ncrepSubstract();             Substraction of two ncrep's
+  ncrepMultiply();              Multiplication of two ncrep's
+  ncrepInvert();                Invert an ncrep
+  ncrepPrint();                 Print for ncrep
+  ncrepDim();                   Return the size of ncrep
+  ncrepSubstitute();            Plug matrices into nc variables in ncrep
+  ncrepEvaluate();              Given (u, Q, v) calculate -u*Q^(-1)*v
+  ncrepIsInvertible();          Random matrix test for invertibility of ncrep
+  ncrepRegularZeroMinimize();   Yields a minimal representation if regular at zero
+  ncrepRegularMinimize();       Yields a minimal representation if regular at scalar point
 ";
 
 LIB "linalg.lib";
@@ -1054,7 +1055,6 @@ EXAMPLE:  example ncInit;
   // Check if already initialized
   // In this case just add missing variables
   if (defined(NCRATINITIALIZE)) {
-    ncVarsAdd(vars);
     return ();
   }
   int NCRATINITIALIZE = 1;
@@ -1348,7 +1348,7 @@ NOTE:
 
 EXAMPLE:  example ncratMultiply;
   shows an example"
- {
+{
   // Both factors are constants
   if (f.kind == "Const" and g.kind == "Const") {
     ncrat h = "Const", list(f.expr[1] * g.expr[1]);
@@ -1393,7 +1393,7 @@ NOTE:
 
 EXAMPLE:  example ncratInvert;
   shows an example"
- {
+{
   ncrat h;
   if (f.kind == "Const") {
     number n = 1;
@@ -1413,7 +1413,7 @@ example {
   ncrat h1, h2;
   h1 = ncratInvert(f);
   print(h1);
-  h2 = f^-1;
+  h2 = f ^ -1;
   print(h2);
 }
 
@@ -1573,7 +1573,7 @@ example {
   "EXAMPLE:";
   echo = 2;
   ncInit(list("x", "y", "z"));
-  poly p = 2*x*y;
+  poly p = 2 * x * y;
   ncrat f = ncratFromPoly(p);
   print(f);
 }
@@ -1586,7 +1586,7 @@ RETURN:   h = f^n
 
 EXAMPLE:  example ncratPower;
   shows an example"
- {
+{
   if (n < 0) {
     return (ncratInvert(ncratPower(f, -n)));
   }
@@ -1630,7 +1630,7 @@ RETURN:   q = (u, Q, v) linear representation of f
 
 EXAMPLE:  example ncrepGet;
   shows an example"
- {
+{
   ncrep q;
 
   // switch on f.kind
@@ -1787,7 +1787,7 @@ NOTE:
 
 EXAMPLE:  example ncrepMultiply;
   shows an example"
- {
+{
   ncrep q;
   int dims = ncols(s.lvec);
   int dimt = ncols(t.lvec);
@@ -2032,7 +2032,7 @@ example {
   ncInit(list("x", "y", "z"));
   ncrat f = ncratFromString("inv(x*y-y*x)");
   ncrep q = ncrepGet(f);
-  ncrepIsInvertible(q, list(x,y), 5, 10);
+  ncrepIsInvertible(q, list(x, y), 5, 10);
   ncrat g = ncratFromString("inv(x-x)");
   ncrep r = ncrepGet(g);
   ncrepIsInvertible(r, list(x), 5, 10);
@@ -2044,8 +2044,8 @@ example {
 
 ##########################################################*/
 
-proc ncrepMinimize(ncrep q, list #)
-"USAGE:     ncrep s = ncrepMinimize(q, l);
+proc ncrepRegularZeroMinimize(ncrep q, list #)
+"USAGE:     ncrep s = ncrepRegularZeroMinimize(q, l);
 
 RETURN:     ncrep s representing the same rational
   function as ncrep q, where s is of minimal size
@@ -2057,7 +2057,7 @@ ASSUMPTION: q is regular at zero, i.e.,
 NOTE:       list l = list(x1, ..., xn) has to consist
   exactly of the nc variables occuring in q
 
-EXAMPLE:    example ncrepMinimize;
+EXAMPLE:    example ncrepRegularZeroMinimize;
   shows an example"
 {
   int i;
@@ -2114,7 +2114,57 @@ example {
   ncrat f = ncratFromString("inv(1+x*y-y*x)");
   ncrep q = ncrepGet(f);
   ncrepDim(q);
-  ncrep s = ncrepMinimize(q, list(x,y));
+  ncrep s = ncrepRegularZeroMinimize(q, list(x, y));
+  ncrepDim(s);
+  s;
+}
+
+proc ncrepRegularMinimize(ncrep q, list vars, list point)
+"USAGE:     ncrep s = ncrepRegularMinimize(q, vars, point);
+
+RETURN:     ncrep s representing the same rational
+  function as ncrep q, where s is of minimal size
+
+ASSUMPTION: q is regular at scalar point a, i.e.,
+  if one substutites in ai for all nc variables xi in q
+  then q.mat has to be invertible
+
+NOTE:       list vars = list(x1, ..., xn) has to consist
+  exactly of the nc variables occuring in q and
+  list point = list(a1, ..., an) consists of scalars
+
+EXAMPLE:    example ncrepRegularMinimize;
+  shows an example"
+{
+  int g = size(vars);
+  if (not(size(point) == g)) {
+    ERROR("Lists have to be of the same size!");
+  }
+
+  list shift, backshift;
+  int i;
+  poly p1, p2;
+  for (i = 1; i <= g; i++) {
+    p1 = vars[i] - point[i];
+    p2 = vars[i] + point[i];
+    shift = shift + list(p1);
+    backshift = backshift + list(p2);
+  }
+
+  ncrep s = ncrepSubstitute(q, vars, shift);
+  ncrep r = ncrepRegularZeroMinimize(s, vars);
+  ncrep q2 = ncrepSubstitute(r, vars, backshift);
+
+  return (q2);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("inv(x*y)");
+  ncrep q = ncrepGet(f);
+  ncrepDim(q);
+  ncrep s = ncrepRegularMinimize(q, list(x, y), list(1, 1));
   ncrepDim(s);
   s;
 }

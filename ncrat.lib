@@ -6,6 +6,9 @@ LIBRARY:      ncrat.lib Framework for working with nc rational functions
 
 AUTHOR:       Ricardo Schnur, email: ricardo.schnur@math.uni-sb.de
 
+SUPPORT:      This project is funded by the SFB-TRR 195
+  'Symbolic Tools in Mathematics and their Application'
+
 OVERVIEW:     This library provides a framework for working with
   non-commutative rational functions and implements an
   algorithm from T. Mai to calculate a linear
@@ -44,6 +47,8 @@ PROCEDURES:
   ncrepIsInvertible();          Random matrix test for invertibility of ncrep
   ncrepRegularZeroMinimize();   Yields a minimal representation if regular at zero
   ncrepRegularMinimize();       Yields a minimal representation if regular at scalar point
+  ncrepGetRegularZeroMinimal(); Get a minimal representation of ncrat regular at zero
+  ncrepGetRegularMinimal();     Get a minimal representation of ncrat regular at scalar point
 ";
 
 LIB "linalg.lib";
@@ -2051,7 +2056,7 @@ RETURN:     ncrep s representing the same rational
   function as ncrep q, where s is of minimal size
 
 ASSUMPTION: q is regular at zero, i.e.,
-  if one substutites in 0 for all nc variables in q
+  if one substitutes in 0 for all nc variables in q
   then q.mat has to be invertible
 
 NOTE:       list l = list(x1, ..., xn) has to consist
@@ -2126,7 +2131,7 @@ RETURN:     ncrep s representing the same rational
   function as ncrep q, where s is of minimal size
 
 ASSUMPTION: q is regular at scalar point a, i.e.,
-  if one substutites in ai for all nc variables xi in q
+  if one substitutes in ai for all nc variables xi in q
   then q.mat has to be invertible
 
 NOTE:       list vars = list(x1, ..., xn) has to consist
@@ -2167,6 +2172,67 @@ example {
   ncrep s = ncrepRegularMinimize(q, list(x, y), list(1, 1));
   ncrepDim(s);
   s;
+}
+
+proc ncrepGetRegularZeroMinimal(ncrat f, list vars)
+"USAGE:     ncrep q = ncrepGetRegularZeroMinimal(f, vars);
+
+RETURN:     q is a representation of f with
+  minimal dimension
+
+ASSUMPTION: f is regular at zero, i.e.,
+  f(0) has to be defined
+
+NOTE:       list vars = list(x1, ..., xn) has to consist
+  exactly of the nc variables occuring in f
+
+EXAMPLE:    example ncrepGetRegularZeroMinimal;
+  shows an example"
+{
+  ncrep q = ncrepGet(f);
+  ncrep q2 = ncrepRegularZeroMinimize(q, vars);
+  return (q2);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("inv(1+x*y-y*x)");
+  list vars = list(x, y);
+  ncrep q = ncrepGetRegularZeroMinimal(f, vars);
+  q;
+}
+
+proc ncrepGetRegularMinimal(ncrat f, list vars, list point)
+"USAGE:     ncrep q = ncrepGetRegularZeroMinimal(f, vars, point);
+
+RETURN:     q is a representation of f with
+  minimal dimension
+
+ASSUMPTION: f is regular at point, i.e.,
+  f(point) has to be defined
+
+NOTE:       list vars = list(x1, ..., xn) has to consist
+  exactly of the nc variables occuring in f and
+  list point = (p1, ..., pn) of scalars such that
+  f(point) is defined
+
+EXAMPLE:    example ncrepGetRegularMinimal;
+  shows an example"
+{
+  ncrep q = ncrepGet(f);
+  ncrep q2 = ncrepRegularMinimize(q, vars, point);
+  return (q2);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("inv(x*y)");
+  list vars = list(x, y);
+  list point = list(1, 1);
+  ncrep q = ncrepGetRegularMinimal(f, vars, point);
+  q;
 }
 
 /*##########################################################

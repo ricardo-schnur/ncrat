@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.1.1.0 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.1.2.0 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -7,7 +7,7 @@ LIBRARY:      ncrat.lib Framework for working with nc rational functions
 AUTHOR:       Ricardo Schnur, email: ricardo.schnur@math.uni-sb.de
 
 SUPPORT:      This project is funded by the SFB-TRR 195
-  'Symbolic Tools in Mathematics and their Application'
+  'Symbolic Tools in Mathematics and their Application'.
 
 OVERVIEW:     This library provides a framework for working with
   non-commutative rational functions and implements an
@@ -66,6 +66,27 @@ LIB "random.lib";
    GENERAL
 
 ##########################################################*/
+
+// Check whether all entries of a matrix are 0
+static proc isMatrixEmpty(matrix M) {
+  int n = ncols(M);
+  int m = nrows(M);
+
+  int i, j;
+  int isZero = 1;
+  i = 1;
+  while (i <= n) {
+    j = 1;
+    while (isZero and j <= m) {
+      if (not(M[j, i] == 0)) {
+        isZero = 0;
+      }
+      j++;
+    }
+    i++;
+  }
+  return (isZero);
+}
 
 /*##########################################################
 
@@ -836,17 +857,8 @@ static proc calculateControllabilitySpace(int g, int n, matrix v, list #) {
     matrix A(i) = #[i];
   }
 
-  // check if v = 0
-  int zero = 1;
-  i = 1;
-  while (zero) {
-    if (not(v[i] == 0)) {
-      zero = 0;
-    }
-  }
-
   // case v = 0
-  if (zero) {
+  if (isMatrixEmpty(v)) {
     return (list(v));
   }
 
@@ -923,7 +935,7 @@ static proc calculateComplement(int n, list b) {
   }
 
   // case S = {0}
-  if (size(b) == 0) {
+  if (isMatrixEmpty(b[1])) {
     for (i = 1; i <= n; i++) {
       c = c + list(e(i));
     }
@@ -978,8 +990,24 @@ static proc orthogonalTransform(matrix bMat, matrix cMat, matrix B, matrix C,
                                 list #) {
   int i;
   list l;
+  int bMatEmpty = isMatrixEmpty(bMat);
+  int cMatEmpty = isMatrixEmpty(cMat);
 
-  matrix P = concat(bMat, cMat);
+  // Define orthogonal transformation
+  if (bMatEmpty) {
+    if (cMatEmpty) {
+      ERROR("Both empty!");
+    } else {
+      matrix P = cMat;
+    }
+  } else {
+    if (cMatEmpty) {
+      matrix P = bMat;
+    } else {
+      matrix P = concat(bMat, cMat);
+    }
+  }
+
   matrix PInv = inverse(P);
   B = PInv * B;
   C = C * P;
@@ -1002,6 +1030,18 @@ static proc cutdown(int n, int offset, matrix B, matrix C, list #) {
   int a = 1 + offset;
   int b = n + offset;
 
+  // Case B or C is zero
+  if (isMatrixEmpty(B) or isMatrixEmpty(C)) {
+    matrix zero[1][1] = 0;
+    list zerolist;
+    int i;
+    for (i = 1; i <= size(#); i++) {
+      zerolist = zerolist + list(zero);
+    }
+    return (zero, zero, zerolist);
+  }
+
+  // Case B and C not zero
   matrix B2 = submat(B, a..b, 1..1);
   matrix C2 = submat(C, 1..1, a..b);
 
@@ -2204,7 +2244,7 @@ example {
 }
 
 proc ncrepGetRegularMinimal(ncrat f, list vars, list point)
-"USAGE:     ncrep q = ncrepGetRegularZeroMinimal(f, vars, point);
+"USAGE:     ncrep q = ncrepGetRegularMinimal(f, vars, point);
 
 RETURN:     q is a representation of f with
   minimal dimension

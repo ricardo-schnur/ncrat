@@ -1934,12 +1934,20 @@ proc ncrepDim(ncrep q)
 "USAGE:   ncrepDim(q);
   q of type ncrat
 
-RETURN:   dimension of q
+RETURN:   dimension of q;
+  returns 0 if q represents the zero-function
 
 EXAMPLE:  example ncrepDim;
   shows an example"
 {
-  return (ncols(q.mat));
+  int n = ncols(q.mat);
+  // Does q represent zero?
+  if (n == 1) {
+    if (q.lvec == 0 or q.rvec == 0) {
+      n = 0;
+    }
+  }
+  return (n);
 }
 example {
   "EXAMPLE:";
@@ -2034,7 +2042,7 @@ example {
 proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff)
 "USAGE:   int dim = ncrepIsInvertible(q, vars, n, maxcoeff);
 
-RETURN:   Integer dim such that:
+RETURN:   list(dim, list vars, list(A1, ..., Ak)), where:
   If dim > 0 then there are matrices A1, ..., Ak of size dim
   such that q is defined at A = (A1, ..., Ak), i.e.,
   q.mat is invertible at A.
@@ -2060,16 +2068,20 @@ EXAMPLE:  example ncrepIsInvertible;
       kill(A(k));
     }
     ncrep q2 = ncrepSubstitute(q, vars, points);
-    kill(points);
 
     // Check for invertibility
     if (mat_rk(q2.mat) == ncols(q2.mat)) {
+      list result = list(i) + list(vars) + list(points);
       kill(q2);
-      return (i)
+      kill(points);
+      return (result);
     }
     kill(q2);
+    kill(points);
   }
-  return (0);
+  list empty;
+  list result = list(0) + list(vars) + list(empty);
+  return (result);
 }
 example {
   "EXAMPLE:";
@@ -2265,14 +2277,15 @@ EXAMPLE:    example ncrepGetRegularMinimal;
   return (q2);
 }
 example {
-  "EXAMPLE:";
+  "EXAMPLE: (Hua's identity)";
   echo = 2;
-  ncInit(list("x", "y"));
-  ncrat f = ncratFromString("inv(x*y)");
-  list vars = list(x, y);
-  list point = list(1, 1);
-  ncrep q = ncrepGetRegularMinimal(f, vars, point);
-  q;
+  ncrat f = ncratFromString("inv(x+x*inv(y)*x)+inv(x+y)-inv(x)");
+  print(f);
+  ncrep r = ncrepGet(f);
+  ncrepDim(r);
+  ncrep s = ncrepGetRegularMinimal(f, list(x, y), list(1, 1));
+  ncrepDim(s);
+  print(s);
 }
 
 /*##########################################################

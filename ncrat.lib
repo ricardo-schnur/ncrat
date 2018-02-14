@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.1.2.1 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.2.0.0 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -34,8 +34,8 @@ PROCEDURES:
   ncratPrint();                 Print for ncrat
   ncratFromString();            Reads string into ncrat
   ncratFromPoly();              Converts poly to ncrat
-  ncratPower(ncrat, int);       Raises ncrat to an integer power
-  ncrepGet(ncrat);              Calculate representtion of ncrat
+  ncratPower();                 Raises ncrat to an integer power
+  ncrepGet();                   Calculate representation of ncrat
   ncrepAdd();                   Addition of two ncrep's
   ncrepSubstract();             Substraction of two ncrep's
   ncrepMultiply();              Multiplication of two ncrep's
@@ -44,7 +44,10 @@ PROCEDURES:
   ncrepDim();                   Return the size of ncrep
   ncrepSubstitute();            Plug matrices into nc variables in ncrep
   ncrepEvaluate();              Given (u, Q, v) calculate -u*Q^(-1)*v
-  ncrepIsInvertible();          Random matrix test for invertibility of ncrep
+  ncrepEvaluateAt();            Evaluate ncrep at scalar or matrix point
+  ncrepIsDefinedDim();          Random matrix test if ncrep can be evaluated at size dim
+  ncrepIsDefined();             Random matrix test if domain of ncrep is not empty
+  ncrepIsRegular();             Random matrix test if ncrep can be evaluated at scalar point
   ncrepRegularZeroMinimize();   Yields a minimal representation if regular at zero
   ncrepRegularMinimize();       Yields a minimal representation if regular at scalar point
   ncrepGetRegularZeroMinimal(); Get a minimal representation of ncrat regular at zero
@@ -1901,7 +1904,7 @@ example {
 
 proc ncrepPrint(ncrep q)
 "USAGE:   ncrepPrint(q);
-  q of type ncrat
+  q of type ncrep
 
 RETURN:   prints q
 
@@ -1932,7 +1935,7 @@ example {
 
 proc ncrepDim(ncrep q)
 "USAGE:   ncrepDim(q);
-  q of type ncrat
+  q of type ncrep
 
 RETURN:   dimension of q;
   returns 0 if q represents the zero-function
@@ -1961,7 +1964,7 @@ example {
 
 proc ncrepSubstitute(ncrep q, list vars, list points)
 "USAGE:     ncrep s = ncrepSubstitute(q, l);
-  q of type ncrat, vars = (x1, ..., xg),
+  q of type ncrep, vars = (x1, ..., xg),
   points = (A1, ... , Ag) with Ai matrices of the
   same dimension and xi of type poly are nc variables
 
@@ -2016,14 +2019,17 @@ example {
 
 proc ncrepEvaluate(ncrep q)
 "USAGE:   matrix M = ncrepEvaluate(q);
-  q of type ncrat
 
 RETURN:   for q=(u, Q, v) calculate -u*Q^(-1)*v
 
 EXAMPLE:  example ncrepEvaluate;
   shows an example"
 {
-  matrix M = -q.lvec * inverse(q.mat) * q.rvec;
+  matrix QInv = inverse(q.mat);
+  if (size(QInv) == 1 and QInv[1, 1] == 0) {
+    ERROR("Matrix not ivenrtible!");
+  }
+  matrix M = -q.lvec * QInv * q.rvec;
   return (M);
 }
 example {
@@ -2039,31 +2045,57 @@ example {
   print(M);
 }
 
-proc ncrepIsInvertible(ncrep q, list vars, int n, int maxcoeff)
-"USAGE:   int dim = ncrepIsInvertible(q, vars, n, maxcoeff);
+proc ncrepEvaluateAt(ncrep q, list vars, list point)
+"USAGE:   matrix M = ncrepEvaluateAt(q, vars, point);
 
-RETURN:   list(dim, list vars, list(A1, ..., Ak)), where:
-  If dim > 0 then there are matrices A1, ..., Ak of size dim
+RETURN:   For q=(u, Q, v) calculate -u*Q(point)^(-1)*v,
+  that is to say, evaluate the ncrat represented
+  by q at point (scalar or matrix point).
+
+EXAMPLE:  example ncrepEvaluateAt;
+  shows an example"
+{
+  ncrep r = ncrepSubstitute(q, vars, point);
+  matrix M = ncrepEvaluate(r);
+  return (M);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("x+y");
+  ncrep q = ncrepGet(f);
+  matrix A[2][2] = 1, 2, 3, 4;
+  matrix B[2][2] = 5, 6, 7, 8;
+  matrix M = ncrepEvaluateAt(q, list(x, y), list(A, B));
+  print(M);
+}
+
+proc ncrepIsDefinedDim(ncrep q, int N, list vars, int n, int maxcoeff)
+"USAGE:   list l = ncrepIsDefinedDim(q, N, vars, n, maxcoeff);
+
+RETURN:   list(k, list vars, list(A1, ..., Ak)), where:
+  If k = N then there are matrices A1, ..., Ak of size N
   such that q is defined at A = (A1, ..., Ak), i.e.,
   q.mat is invertible at A.
-  If dim = 0 then no such point was found.
+  If k = 0 then no such point was found.
 
 NOTE:     Test whether q.mat is invertible via evaluation
   at random matrix points with integer coefficients
   in [-maxcoeff, maxcoeff]. Stops after n tries.
-  Use ixi-matrix in i-th try. The list contains the
-  variables which occur in q.
+  Use square matrices of dimension N. The list vars
+  contains the nc variables which occur in q.
 
-EXAMPLE:  example ncrepIsInvertible;
+EXAMPLE:  example ncrepIsDefinedDim;
   shows an example"
 {
-  int N = size(vars);
+  int g = size(vars);
   int i, k;
   for (i = 1; i <= n; i++) {
     // Substitute random matrices
     list points;
-    for (k = 1; k <= N; k++) {
-      matrix A(k) = randommat(i, i, maxideal(0), maxcoeff);
+    for (k = 1; k <= g; k++) {
+      matrix A(k) = randommat(N, N, maxideal(0), maxcoeff);
       points = points + list(A(k));
       kill(A(k));
     }
@@ -2071,7 +2103,7 @@ EXAMPLE:  example ncrepIsInvertible;
 
     // Check for invertibility
     if (mat_rk(q2.mat) == ncols(q2.mat)) {
-      list result = list(i) + list(vars) + list(points);
+      list result = list(N) + list(vars) + list(points);
       kill(q2);
       kill(points);
       return (result);
@@ -2086,13 +2118,83 @@ EXAMPLE:  example ncrepIsInvertible;
 example {
   "EXAMPLE:";
   echo = 2;
-  ncInit(list("x", "y", "z"));
+  ncInit(list("x", "y"));
   ncrat f = ncratFromString("inv(x*y-y*x)");
   ncrep q = ncrepGet(f);
-  ncrepIsInvertible(q, list(x, y), 5, 10);
+  ncrepIsDefinedDim(q, 1, list(x, y), 10, 100);
+  ncrepIsDefinedDim(q, 2, list(x, y), 10, 100);
+}
+
+proc ncrepIsDefined(ncrep q, list vars, int n, int maxcoeff)
+"USAGE:   list l = ncrepIsDefined(q, vars, n, maxcoeff);
+
+RETURN:   list(dim, list vars, list(A1, ..., Ak)), where:
+  If dim > 0 then there are matrices A1, ..., Ak of size dim
+  such that q is defined at A = (A1, ..., Ak), i.e.,
+  q.mat is invertible at A.
+  If dim = 0 then no such point was found.
+
+NOTE:     Test whether q.mat is invertible via evaluation
+  at random matrix points with integer coefficients
+  in [-maxcoeff, maxcoeff]. Stops after n tries.
+  Use ixi-matrix in i-th try. The list vars contains the
+  nc variables which occur in q.
+
+EXAMPLE:  example ncrepIsDefined;
+  shows an example"
+{
+  int i;
+  list l;
+  for (i = 1; i <= n; i++) {
+    l = ncrepIsDefinedDim(q, i, vars, 1, maxcoeff);
+    if (l[1] > 0) {
+      return (l);
+    }
+  }
+  return (l);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("inv(x*y-y*x)");
+  ncrep q = ncrepGet(f);
+  ncrepIsDefined(q, list(x, y), 5, 10);
   ncrat g = ncratFromString("inv(x-x)");
   ncrep r = ncrepGet(g);
-  ncrepIsInvertible(r, list(x), 5, 10);
+  ncrepIsDefined(r, list(x), 5, 10);
+}
+
+proc ncrepIsRegular(ncrep q, list vars, int n, int maxcoeff)
+"USAGE:   list l = ncrepIsRegular(q, vars, n, maxcoeff);
+
+RETURN:   list(k, list vars, list(a1, ..., ak)), where:
+  If k = 1 then there are scalars (1x1-matrices) a1, ..., ak
+  such that q is defined at a = (a1, ..., ak), i.e.,
+  q.mat is invertible at a.
+  If k = 0 then no such point was found.
+
+NOTE:     Test whether q.mat is invertible via evaluation
+  at random integers  in [-maxcoeff, maxcoeff].
+  Stops after n tries. The list vars
+  contains the nc variables which occur in q.
+
+EXAMPLE:  example ncrepIsRegular;
+  shows an example"
+{
+  list l = ncrepIsDefinedDim(q, 1, vars, n, maxcoeff);
+  return (l);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("inv(x*y-y*x)");
+  ncrep q = ncrepGet(f);
+  ncrepIsRegular(q, list(x, y), 10, 100);
+  ncrat g = ncratFromString("inv(1+x*y-y*x)");
+  ncrep r = ncrepGet(g);
+  ncrepIsRegular(r, list(x, y), 10, 100);
 }
 
 /*##########################################################
@@ -2201,9 +2303,26 @@ EXAMPLE:    example ncrepRegularMinimize;
   list shift, backshift;
   int i;
   poly p1, p2;
+
+  // point matrices?
+  if (g > 0 and typeof(point[1]) == "matrix") {
+    if (ncols(point[1]) > 1) {
+      ERROR("Not a scalar point!");
+    }
+    for (i = 1; i <= g; i++) {
+      poly z(i) = point[i][1, 1];
+    }
+  }
+  // point scalars
+  else {
+    for (i = 1; i <= g; i++) {
+      poly z(i) = point[i];
+    }
+  }
+
   for (i = 1; i <= g; i++) {
-    p1 = vars[i] - point[i];
-    p2 = vars[i] + point[i];
+    p1 = vars[i] - z(i);
+    p2 = vars[i] + z(i);
     shift = shift + list(p1);
     backshift = backshift + list(p2);
   }

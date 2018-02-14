@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.2.0.0 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.2.0.1 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -724,14 +724,6 @@ static proc ncrepVar(poly p) {
   q.rvec = right;
   q.mat = Q;
   return (q);
-}
-
-// Tensor A with unit matrix of size N
-static proc ncTensorMat(matrix A, int N) {
-  matrix E[N][N];
-  E = E + 1;
-  matrix M = tensor(A, E);
-  return (M);
 }
 
 // Substitute all occurences of VARIABLE*E in M with A
@@ -1991,7 +1983,10 @@ EXAMPLE:  example ncrepSubstitute;
   }
 
   int n = ncols(points[1]);
-  matrix M = ncTensorMat(Q(0), n);
+  matrix E[n][n];
+  E = E + 1;
+
+  matrix M = tensor(Q(0), E);
   for (i = 1; i <= g; i++) {
     matrix A(i) = points[i];
     M = M + tensor(Q(i), A(i));
@@ -1999,8 +1994,8 @@ EXAMPLE:  example ncrepSubstitute;
 
   ncrep q2;
   q2.mat = M;
-  q2.lvec = ncTensorMat(q.lvec, n);
-  q2.rvec = ncTensorMat(q.rvec, n);
+  q2.lvec = tensor(q.lvec, E);
+  q2.rvec = tensor(q.rvec, E);
 
   return (q2);
 }
@@ -2237,6 +2232,8 @@ EXAMPLE:    example ncrepRegularZeroMinimize;
   // cut down on observable space
   n = size(b);
   list l;
+
+  // switch to adjoint system
   for (i = 1; i <= g; i++) {
     l = l + list(transpose(k[3][i]));
   }

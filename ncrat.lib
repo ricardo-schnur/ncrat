@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.2.0.1 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.3.0.0 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -2022,7 +2022,7 @@ EXAMPLE:  example ncrepEvaluate;
 {
   matrix QInv = inverse(q.mat);
   if (size(QInv) == 1 and QInv[1, 1] == 0) {
-    ERROR("Matrix not ivenrtible!");
+    ERROR("Matrix not invertible!");
   }
   matrix M = -q.lvec * QInv * q.rvec;
   return (M);
@@ -2251,13 +2251,13 @@ EXAMPLE:    example ncrepRegularZeroMinimize;
   // build ncrep
   n = size(b);
   ncrep r;
-  r.lvec = -1 * ktp[2];
-  r.rvec = ktp[1];
+  r.lvec = -1 * transpose(ktp[1]);
+  r.rvec = transpose(ktp[2]);
 
   matrix Q[n][n];
   Q = Q + 1;
   for (i = 1; i <= g; i++) {
-    Q = Q - ktp[3][i] * #[i];
+    Q = Q - transpose(ktp[3][i]) * #[i];
   }
   r.mat = Q;
 

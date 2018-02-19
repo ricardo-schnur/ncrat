@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.4.1.1 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.4.1.2 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -2310,6 +2310,42 @@ example {
   ncrepIsRegular(r, list(x, y), 10, 100);
 }
 
+proc ncrepPencilGet(ncrep r, list vars)
+"USAGE:     list pencil = ncrepPencilGet(r, vars);
+
+RETURN:     pencil = list(vars, matrices),
+  where vars = list(1, x1, ..., xg) are the variables
+  occuring in r and matrices = (Q0, ..., Qg) is a list of
+  matrices such that
+    r.mat = Q0 * x0 + ... + Qg * xg
+  with x0 = 1
+
+NOTE:       list vars = list(x1, ..., xn) has to consist
+  exactly of the nc variables occuring in f
+
+EXAMPLE:    example ncrepPencilGet;
+  shows an example"
+{
+  poly p = 1;
+  list varsNew = list(p) + vars;
+  list matrices = ncrepLinearPencil(r, vars);
+  list l = list(varsNew, matrices);
+  return (l);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("x*y");
+  ncrep r = ncrepGet(f);
+  print(r.mat);
+  list l = ncrepPencilGet(r, list(x, y));
+  print(l[1]);
+  print(l[2][1]);
+  print(l[2][2]);
+  print(l[2][3]);
+}
+
 proc ncrepPencilCombine(list pencil)
 "USAGE:     matrix Q = ncrepPencilCombine(pencil);
 
@@ -2553,43 +2589,6 @@ example {
   ncrepDim(s);
   print(s);
 }
-
-proc ncrepPencilGet(ncrep r, list vars)
-"USAGE:     list pencil = ncrepPencilGet(r, vars);
-
-RETURN:     pencil = list(vars, matrices),
-  where vars = list(1, x1, ..., xg) are the variables
-  occuring in r and matrices = (Q0, ..., Qg) is a list of
-  matrices such that
-    r.mat = Q0 * x0 + ... + Qg * xg
-  with x0 = 1
-
-NOTE:       list vars = list(x1, ..., xn) has to consist
-  exactly of the nc variables occuring in f
-
-EXAMPLE:    example ncrepPencilGet;
-  shows an example"
-{
-  poly p = 1;
-  list varsNew = list(p) + vars;
-  list matrices = ncrepLinearPencil(r, vars);
-  list l = list(varsNew, matrices);
-  return (l);
-}
-example {
-  "EXAMPLE:";
-  echo = 2;
-  ncInit(list("x", "y"));
-  ncrat f = ncratFromString("x*y");
-  ncrep r = ncrepGet(f);
-  print(r.mat);
-  list l = ncrepPencilGet(r, list(x, y));
-  print(l[1]);
-  print(l[2][1]);
-  print(l[2][2]);
-  print(l[2][3]);
-}
-
 
 /*##########################################################
 

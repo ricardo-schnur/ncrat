@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.4.1.0 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.4.1.1 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -2310,6 +2310,37 @@ example {
   ncrepIsRegular(r, list(x, y), 10, 100);
 }
 
+proc ncrepPencilCombine(list pencil)
+"USAGE:     matrix Q = ncrepPencilCombine(pencil);
+
+RETURN:     matrix Q = Q0*x0 + ... + Qg*xg,
+  where vars = list(x0, ..., xg) consists of polynomials
+  and matrices = (Q0, ..., Qg) is a list of matrices
+
+EXAMPLE:    example ncrepPencilCombine;
+  shows an example"
+{
+  int g = size(pencil[1]);
+  int n = ncols(pencil[2][1]);
+  matrix Q[n][n];
+  int i;
+  for (i = 1; i <= g; i++) {
+    Q = Q + pencil[1][i] * pencil[2][i];
+  }
+  return (Q);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("x*y");
+  ncrep r = ncrepGet(f);
+  print(r.mat);
+  list l = ncrepPencilGet(r, list(x, y));
+  matrix Q = ncrepPencilCombine(l);
+  print(Q);
+}
+
 /*##########################################################
 
    REGULAR CASE
@@ -2559,36 +2590,6 @@ example {
   print(l[2][3]);
 }
 
-proc ncrepPencilCombine(list pencil)
-"USAGE:     matrix Q = ncrepPencilCombine(pencil);
-
-RETURN:     matrix Q = Q0*x0 + ... + Qg*xg,
-  where vars = list(x0, ..., xg) consists of polynomials
-  and matrices = (Q0, ..., Qg) is a list of matrices
-
-EXAMPLE:    example ncrepPencilCombine;
-  shows an example"
-{
-  int g = size(pencil[1]);
-  int n = ncols(pencil[2][1]);
-  matrix Q[n][n];
-  int i;
-  for (i = 1; i <= g; i++) {
-    Q = Q + pencil[1][i] * pencil[2][i];
-  }
-  return (Q);
-}
-example {
-  "EXAMPLE:";
-  echo = 2;
-  ncInit(list("x", "y"));
-  ncrat f = ncratFromString("x*y");
-  ncrep r = ncrepGet(f);
-  print(r.mat);
-  list l = ncrepPencilGet(r, list(x, y));
-  matrix Q = ncrepPencilCombine(l);
-  print(Q);
-}
 
 /*##########################################################
 

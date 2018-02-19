@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.4.0.0 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.4.1.0 Feb_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -53,6 +53,8 @@ PROCEDURES:
   ncrepRegularMinimize();       Yields a minimal representation if regular at scalar point
   ncrepGetRegularZeroMinimal(); Get a minimal representation of ncrat regular at zero
   ncrepGetRegularMinimal();     Get a minimal representation of ncrat regular at scalar point
+  ncrepPencilGet();             Given representation decompose its matrix in linear pencil
+  ncrepPencilCombine();         Given linear pencil add up its elements to single matrix
 ";
 
 LIB "linalg.lib";
@@ -2511,6 +2513,7 @@ EXAMPLE:    example ncrepGetRegularMinimal;
 example {
   "EXAMPLE: (Hua's identity)";
   echo = 2;
+  ncInit(list("x", "y"));
   ncrat f = ncratFromString("inv(x+x*inv(y)*x)+inv(x+y)-inv(x)");
   print(f);
   ncrep r = ncrepGet(f);
@@ -2518,6 +2521,73 @@ example {
   ncrep s = ncrepGetRegularMinimal(f, list(x, y), list(1, 1));
   ncrepDim(s);
   print(s);
+}
+
+proc ncrepPencilGet(ncrep r, list vars)
+"USAGE:     list pencil = ncrepPencilGet(r, vars);
+
+RETURN:     pencil = list(vars, matrices),
+  where vars = list(1, x1, ..., xg) are the variables
+  occuring in r and matrices = (Q0, ..., Qg) is a list of
+  matrices such that
+    r.mat = Q0 * x0 + ... + Qg * xg
+  with x0 = 1
+
+NOTE:       list vars = list(x1, ..., xn) has to consist
+  exactly of the nc variables occuring in f
+
+EXAMPLE:    example ncrepPencilGet;
+  shows an example"
+{
+  poly p = 1;
+  list varsNew = list(p) + vars;
+  list matrices = ncrepLinearPencil(r, vars);
+  list l = list(varsNew, matrices);
+  return (l);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("x*y");
+  ncrep r = ncrepGet(f);
+  print(r.mat);
+  list l = ncrepPencilGet(r, list(x, y));
+  print(l[1]);
+  print(l[2][1]);
+  print(l[2][2]);
+  print(l[2][3]);
+}
+
+proc ncrepPencilCombine(list pencil)
+"USAGE:     matrix Q = ncrepPencilCombine(pencil);
+
+RETURN:     matrix Q = Q0*x0 + ... + Qg*xg,
+  where vars = list(x0, ..., xg) consists of polynomials
+  and matrices = (Q0, ..., Qg) is a list of matrices
+
+EXAMPLE:    example ncrepPencilCombine;
+  shows an example"
+{
+  int g = size(pencil[1]);
+  int n = ncols(pencil[2][1]);
+  matrix Q[n][n];
+  int i;
+  for (i = 1; i <= g; i++) {
+    Q = Q + pencil[1][i] * pencil[2][i];
+  }
+  return (Q);
+}
+example {
+  "EXAMPLE:";
+  echo = 2;
+  ncInit(list("x", "y"));
+  ncrat f = ncratFromString("x*y");
+  ncrep r = ncrepGet(f);
+  print(r.mat);
+  list l = ncrepPencilGet(r, list(x, y));
+  matrix Q = ncrepPencilCombine(l);
+  print(Q);
 }
 
 /*##########################################################

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.4.1.2 Feb_2018 "; // $Id$
+version="version ncrat.lib 1.4.1.3 May_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -10,15 +10,15 @@ SUPPORT:      This project is funded by the SFB-TRR 195
   'Symbolic Tools in Mathematics and their Application'.
 
 OVERVIEW:     This library provides a framework for working with
-  non-commutative rational functions and implements an
-  algorithm from T. Mai to calculate a linear
-  representation of said functions.
+  non-commutative rational functions (or rather, expressions)
+  and their representations
 
 REFERENCES:   T. Mai: On the analytic theory of non-commutative
    distributions in free probability. Universitaet des Saarlandes,
    Dissertation, 2017
 
-KEYWORDS:     noncommutative rational functions, representations
+KEYWORDS:     noncommutative, rational expressions,
+   rational functions, formal linear representations, minimal representations
 
 PROCEDURES:
   ncInit(list);                 Set up framework, list contains nc variables

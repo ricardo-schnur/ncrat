@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.4.1.3 May_2018 "; // $Id$
+version="version ncrat.lib 1.5.0.1 May_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -29,7 +29,6 @@ PROCEDURES:
   ncratSubstract();             Substraction of two ncrat's
   ncratMultiply();              Multiplication of two ncrat's
   ncratInvert();                Invert an ncrat
-  ncratTranspose();             Transpose an ncrat
   ncratSPrint();                Print-to-string for ncrat
   ncratPrint();                 Print for ncrat
   ncratFromString();            Reads string into ncrat
@@ -358,9 +357,6 @@ static proc tsGet() {
     if (name == "inv") {
       return (makeToken("inv"));
     }
-    if (name == "tp") {
-      return (makeToken("tp"));
-    }
 
     // constant or variable
     int isVar = 0;
@@ -434,7 +430,6 @@ static proc tsGet() {
         "+" Primary
         "-" Primary
         "inv(" Expression ")"
-        "tp(" Expression ")"
         Name
 
     Number:
@@ -506,22 +501,6 @@ static proc primary() {
     }
 
     return (ncratInvert(f));
-  }
-  // involution
-  if (t.kind == "tp") {
-    t = tsGet();
-    if (t.kind != "(") {
-      ERROR("'(' expected!");
-    }
-
-    ncrat f = expression();
-
-    t = tsGet();
-    if (t.kind != ")") {
-      ERROR(")' expected!");
-    }
-
-    return (ncratTranspose(f));
   }
 
   ERROR("Primary expected!");
@@ -680,7 +659,7 @@ static proc ncratIsValid(string s, list l) {
       break;
     }
 
-    if (s == "Inv" or s == "Tp") {
+    if (s == "Inv") {
       if (not((size(l) == 1) and (typeof(l[1]) == "ncrat"))) {
         return (0);
       }
@@ -1180,7 +1159,6 @@ EXAMPLE:  example ncInit;
         ("Sub",   [ncrat, ncrat])     substraction
         ("Mult",  [ncrat, ncrat])     multiplication
         ("Inv",   [ncrat])            inverse
-        ("Tp",    [ncrat])            involution (transpose)
 
   /---------------------------------------------------------*/
 
@@ -1521,27 +1499,6 @@ example {
   print(h2);
 }
 
-proc ncratTranspose(ncrat f)
-"USAGE:   ncrat h = ncratTranspose(f);
-  f of type ncrat
-
-RETURN:   h = tp(f)
-
-EXAMPLE:  example ncratTranspose;
-  shows an example"
-{
-  ncrat h = "Tp", list(f);
-  return (h);
-}
-example {
-  "EXAMPLE:";
-  echo = 2;
-  ncInit(list("x", "y", "z"));
-  ncrat f = ncratFromString("2*x*y");
-  print(f);
-  ncrat h = ncratTranspose(f);
-  print(h);
-}
 
 proc ncratSPrint(ncrat f)
 "USAGE:   string s = ncratSPrint(f);
@@ -1593,10 +1550,6 @@ EXAMPLE:  example ncratSPrint;
 
   if (s == "Inv") {
     t = "inv(" + ncratSPrint(l[1]) + ")";
-  }
-
-  if (s == "Tp") {
-    t = "tp(" + ncratSPrint(l[1]) + ")";
   }
 
   return (t);
@@ -1836,11 +1789,6 @@ EXAMPLE:  example ncrepGet;
 
   if (f.kind == "Inv") {
     q = ncrepInvert(ncrepGet(f.expr[1]));
-    return (q);
-  }
-
-  if (f.kind == "Tp") {
-    q = ncrepTp(ncrepGet(f.expr[1]));
     return (q);
   }
 }

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////
-version="version ncrat.lib 1.5.1.0 June_2018 "; // $Id$
+version="version ncrat.lib 1.5.1.1 June_2018 "; // $Id$
 category="Noncommutative";
 info="
 LIBRARY:      ncrat.lib Framework for working with nc rational functions
@@ -1668,16 +1668,17 @@ EXAMPLE:  example ncratInvert;
   shows an example"
 {
   ncrat h;
-  if (f.kind == "Const" && f.expr[1] != 0)
+  if (f.kind == "Const")
   {
-    number n = 1;
-    number m = f.expr[1];
-    h = "Const", list(n / m);
+    if (f.expr[1] != 0)
+    {
+      number n = 1;
+      number m = f.expr[1];
+      h = "Const", list(n / m);
+      return (h);
+    }
   }
-  else
-  {
-    h = "Inv", list(f);
-  }
+  h = "Inv", list(f);
   return (h);
 }
 example
